@@ -1,0 +1,32 @@
+{
+	"name": "hypernove-sdk",
+	"version": "1.0.0",
+	"description": "Hypernove SDK for Whirlpool operations",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/server.js",
+		"dev": "npx tsx src/server.ts"
+	},
+	"dependencies": {
+		"@coral-xyz/anchor": "^0.28.0",
+		"@orca-so/common-sdk": "^0.6.11",
+		"@orca-so/whirlpools": "^1.0.3",
+		"@orca-so/whirlpools-sdk": "^0.13.17",
+		"@solana/spl-token": "^0.4.12",
+		"@solana/web3.js": "1.98.0",
+		"@types/express": "^5.0.0",
+		"@types/swagger-jsdoc": "^6.0.4",
+		"@types/swagger-ui-express": "^4.1.8",
+		"bs58": "^6.0.0",
+		"decimal.js": "^10.5.0",
+		"dotenv": "^16.4.7",
+		"express": "^4.21.2",
+		"swagger-jsdoc": "^6.2.8",
+		"swagger-ui-express": "^5.0.1",
+		"typescript": "^5.8.2"
+	},
+	"devDependencies": {
+		"@types/node": "^22.13.8"
+	}
+}
