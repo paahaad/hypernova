@@ -67,7 +67,6 @@ pub fn create_token(
     token_uri: String,
     
     total_supply: u64,
-    token_price: u64,
     min_purchase: u64,
     max_purchase: u64,
     presale_percentage: i8,
@@ -132,7 +131,8 @@ pub fn create_token(
     presale_info.token_mint = ctx.accounts.mint_account.key();
     presale_info.total_supply = total_supply;
     presale_info.available = total_supply * presale_percentage as u64 / 100;
-    presale_info.token_price = token_price;
+    // let say someone wants to fundraising_target to be $20000 so the price will be $20000 / 21,000,000 = 0.00095238 USD.    
+    presale_info.token_price = ticker as u64 / (total_supply * presale_percentage as u64 / 100);
     presale_info.developer = ctx.accounts.payer.key();
     
     presale_info.min_purchase = min_purchase;
