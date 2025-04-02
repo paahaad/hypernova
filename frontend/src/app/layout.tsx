@@ -6,7 +6,7 @@ import Layout from "@/components/layout/layout";
 import { SolanaProvider } from "@/providers/SolanaProvider";
 import { getWalletAdapters } from "@/config/wallets";
 import { getRpcEndpoint } from "@/config/rpc";
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { WalletAdapter, WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 export default function RootLayout({
   children,
@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SolanaProvider network={network} wallets={wallets} endpoint={endpoint}>
+        <SolanaProvider network={network} wallets={wallets as WalletAdapter[]} endpoint={endpoint}>
           <Layout>
             {children}
           </Layout>

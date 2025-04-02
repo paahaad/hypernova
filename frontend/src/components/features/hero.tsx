@@ -46,8 +46,16 @@ export function Hero() {
   const toAmount = useMemo(() => {
     if (!data?.data) return "...";
     
-    const fromPrice = parseFloat(data.data[fromToken.address].price);
-    const toPrice = parseFloat(data.data[toToken.address].price);
+    const fromTokenData = data.data[fromToken.address];
+    const toTokenData = data.data[toToken.address];
+    
+    if (!fromTokenData?.price || !toTokenData?.price) return "...";
+    
+    const fromPrice = parseFloat(fromTokenData.price);
+    const toPrice = parseFloat(toTokenData.price);
+    
+    if (isNaN(fromPrice) || isNaN(toPrice)) return "...";
+    
     const amount = (fromPrice / toPrice * parseFloat(fromAmount)).toFixed(2);
     return new Intl.NumberFormat('en-US').format(parseFloat(amount));
   }, [data, fromToken, toToken, fromAmount]);
