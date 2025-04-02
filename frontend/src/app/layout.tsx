@@ -3,6 +3,7 @@
 import "./globals.css";
 import React from "react";
 import Layout from "@/components/layout/layout";
+import { QueryProvider } from "@/lib/providers/QueryProvider";
 
 export default function RootLayout({
   children,
@@ -12,9 +13,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Layout>
-          {children}
-        </Layout>
+        <QueryProvider>
+          <Layout>
+            {children}
+          </Layout>
+        </QueryProvider>
       </body>
     </html>
   );
