@@ -5,18 +5,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { MenuIcon, XIcon } from "lucide-react";
-import { usePrivy } from '@privy-io/react-auth';
 import { usePathname } from 'next/navigation';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { login, logout, authenticated } = usePrivy();
+  const { connected } = useWallet();
   const pathname = usePathname();
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const showLaunchButton = authenticated && pathname !== '/launch';
+  const showLaunchButton = connected && pathname !== '/launch';
 
   return (
     <header className="relative z-20">
@@ -46,9 +48,9 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/swap" className="text-sm font-medium text-gray-200 hover:text-white transition-colors">
+            {/* <Link href="/swap" className="text-sm font-medium text-gray-200 hover:text-white transition-colors">
               Swap
-            </Link>
+            </Link> */}
             <Link href="/pools" className="text-sm font-medium text-gray-200 hover:text-white transition-colors">
               Liquidity
             </Link>
@@ -59,23 +61,7 @@ export function Header() {
 
           {/* Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {authenticated ? (
-              <Button
-                variant="outline"
-                className="border-gray-700 hover:bg-gray-800 text-white"
-                onClick={logout}
-              >
-                Disconnect Wallet
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="border-gray-700 hover:bg-gray-800 text-white"
-                onClick={login}
-              >
-                Connect Wallet
-              </Button>
-            )}
+            <WalletMultiButton className="!bg-transparent !border-gray-700 hover:!bg-gray-800 !text-white" />
           </div>
 
           {/* Mobile Menu Button */}
@@ -110,15 +96,9 @@ export function Header() {
               <Link href="/launch" className="text-sm font-medium text-gray-200 hover:text-white transition-colors py-2">
                 Launch
               </Link>
-              {authenticated ? (
-                <Button className="w-full mt-2" onClick={logout}>
-                  Disconnect Wallet
-                </Button>
-              ) : (
-                <Button className="w-full mt-2" onClick={login}>
-                  Connect Wallet
-                </Button>
-              )}
+              <div className="w-full mt-2">
+                <WalletMultiButton className="!w-full !bg-transparent !border-gray-700 hover:!bg-gray-800 !text-white" />
+              </div>
             </nav>
           </div>
         )}
