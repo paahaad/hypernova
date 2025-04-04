@@ -4,6 +4,104 @@ import React, { useEffect } from "react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export function MobileWalletButton() {
+  const { connected, publicKey } = useWallet();
+  
+  return (
+    <div className="wallet-button-mobile-wrapper">
+      <WalletMultiButton />
+      <style jsx global>{`
+        .wallet-button-mobile-wrapper {
+          position: relative;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-button {
+          width: 36px !important;
+          height: 36px !important;
+          min-width: 36px !important;
+          padding: 0 !important;
+          border-radius: 9999px !important;
+          border: 1px solid rgba(55, 65, 81, 0.8) !important;
+          background-color: rgba(17, 24, 39, 0.7) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-button:hover {
+          background-color: rgba(31, 41, 55, 0.8) !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-button-start-icon {
+          margin: 0 !important;
+          position: relative !important;
+          display: block !important;
+          visibility: visible !important;
+          width: 18px !important;
+          height: 18px !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-button span {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+          opacity: 0 !important;
+        }
+        
+        /* Position the dropdown */
+        .wallet-button-mobile-wrapper .wallet-adapter-dropdown {
+          position: relative !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-dropdown-list {
+          position: absolute !important;
+          top: 100% !important;
+          right: 0 !important;
+          transform: none !important;
+          margin-top: 4px !important;
+          min-width: 200px !important;
+          background-color: rgba(17, 24, 39, 0.95) !important;
+          backdrop-filter: blur(4px) !important;
+          border: 1px solid rgba(31, 41, 55, 0.8) !important;
+          border-radius: 0.375rem !important;
+          padding: 4px !important;
+          z-index: 999 !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-dropdown-list-item {
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.875rem !important;
+          border-radius: 0.25rem !important;
+          text-align: left !important;
+          color: rgb(229, 231, 235) !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          transition: all 0.2s ease !important;
+          border: none !important;
+          background-color: transparent !important;
+        }
+        
+        .wallet-button-mobile-wrapper .wallet-adapter-dropdown-list-item:hover {
+          background-color: rgba(55, 65, 81, 0.7) !important;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export function CustomWalletButton({ className, ...props }: React.ComponentProps<typeof WalletMultiButton>) {
   // Override wallet adapter text to change "Connect a wallet on Solana" to "Connect your preferred wallet"
