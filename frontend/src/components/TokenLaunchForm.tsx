@@ -24,8 +24,8 @@ interface FormData {
 }
 
 export default function TokenLaunchForm() {
-  const { wallets , ready} = useSolanaWallets();
-const [publicKey, setPublicKey] = useState<string | null>(null);
+  const { wallets, ready } = useSolanaWallets();
+  const [publicKey, setPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',

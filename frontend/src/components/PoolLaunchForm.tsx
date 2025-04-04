@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { usePrivy, useSolanaWallets } from '@privy-io/react-auth';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
@@ -15,7 +15,7 @@ interface FormData {
 }
 
 export default function PoolLaunchForm() {
-  const { wallets, ready } = useSolanaWallets();
+  const { publicKey, sendTransaction } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     tokenMintA: '',
@@ -25,13 +25,7 @@ export default function PoolLaunchForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!ready || wallets.length === 0) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    const walletAddress = wallets[0].address;
-    if (!walletAddress) {
+    if (!publicKey) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -46,7 +40,7 @@ export default function PoolLaunchForm() {
         body: JSON.stringify({
           tokenMintA: formData.tokenMintA,
           tokenMintB: formData.tokenMintB,
-          userAddress: walletAddress,
+          userAddress: publicKey.toString(),
         }),
       });
 
@@ -63,7 +57,7 @@ export default function PoolLaunchForm() {
       }
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
       
-      const signature = await wallets[0].sendTransaction(txData, connection);
+      const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
 
       toast.success('Pool created successfully!');
