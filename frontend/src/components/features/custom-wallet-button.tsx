@@ -66,11 +66,20 @@ export function CustomWalletButton({ className, ...props }: React.ComponentProps
           height: 1rem !important;
         }
         
+        /* Dropdown styling */
+        .custom-wallet-wrapper .wallet-adapter-dropdown {
+          display: inline-block !important; 
+        }
+        
         .custom-wallet-wrapper .wallet-adapter-dropdown-list {
           background-color: rgba(17, 24, 39, 0.95) !important;
           backdrop-filter: blur(4px) !important;
           border: 1px solid rgba(31, 41, 55, 0.8) !important;
-          border-radius: 0.5rem !important;
+          border-radius: 0.2rem !important;
+          margin-top: 0.25rem !important;
+          padding: 0.15rem !important;
+          overflow: hidden !important;
+          z-index: 50 !important;
         }
         
         .custom-wallet-wrapper .wallet-adapter-dropdown-list-item {
@@ -78,13 +87,34 @@ export function CustomWalletButton({ className, ...props }: React.ComponentProps
           font-size: 0.875rem !important;
           border-radius: 0.25rem !important;
           text-align: left !important;
+          color: rgb(229, 231, 235) !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          transition: all 0.2s ease !important;
+          border: none !important;
+          background-color: transparent !important;
+        }
+        
+        .custom-wallet-wrapper .wallet-adapter-dropdown-list-item:hover {
+          background-color: rgba(55, 65, 81, 0.7) !important;
+
+        }
+
+        .custom-wallet-wrapper .wallet-adapter-dropdown-list-item img,
+        .wallet-adapter-modal-list .wallet-adapter-button img {
+          width: 20px !important;
+          height: 20px !important;
+          margin-right: 0.5rem !important;
+          border-radius: 4px !important;
         }
         
         /* Modal Styling */
         .wallet-adapter-modal-wrapper {
           background-color: rgba(0, 0, 0, 0.8) !important;
           backdrop-filter: blur(10px) !important;
-          padding: 1rem !important;
+          padding: 1.25rem !important;
         }
         
         .wallet-adapter-modal {
@@ -142,6 +172,9 @@ export function CustomWalletButton({ className, ...props }: React.ComponentProps
           transition: all 0.2s ease !important;
           text-align: left !important;
           justify-content: flex-start !important;
+          display: flex !important;
+          align-items: center !important;
+          width: 100% !important;
         }
         
         .wallet-adapter-modal-list .wallet-adapter-button:hover {

@@ -71,36 +71,53 @@ export default function PoolLaunchForm() {
   };
 
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="w-full max-w-4xl mx-auto p-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Token Mint A Input */}
         <div>
-          <label htmlFor="tokenMintA" className="block text-sm font-medium mb-1">
-            Token Mint A
-          </label>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Token Mint A Address</label>
           <Input
-            id="tokenMintA"
+            type="text"
             value={formData.tokenMintA}
             onChange={(e) => setFormData({ ...formData, tokenMintA: e.target.value })}
-            placeholder="Enter token mint address"
+            className="w-full bg-gray-800/50 border-gray-700"
+            placeholder="Enter Solana token mint address"
             required
           />
         </div>
+
+        {/* Token Mint B Input */}
         <div>
-          <label htmlFor="tokenMintB" className="block text-sm font-medium mb-1">
-            Token Mint B
-          </label>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Token Mint B Address</label>
           <Input
-            id="tokenMintB"
+            type="text"
             value={formData.tokenMintB}
             onChange={(e) => setFormData({ ...formData, tokenMintB: e.target.value })}
-            placeholder="Enter token mint address"
+            className="w-full bg-gray-800/50 border-gray-700"
+            placeholder="Enter Solana token mint address"
             required
           />
         </div>
-        <Button type="submit" disabled={isLoading}>
+
+        {/* Pool Configuration Info */}
+        <Card className="p-4 bg-transparent border-gray-700">
+          <h3 className="text-lg font-medium text-gray-200 mb-4">Pool Configuration</h3>
+          <div className="space-y-2 text-sm text-gray-300">
+            <p>• Fee Rate: 1%</p>
+            <p>• Tick Spacing: 32896</p>
+            <p>• Initial Liquidity: 0</p>
+          </div>
+        </Card>
+
+        {/* Create Pool Button */}
+        <Button
+          type="submit"
+          className="w-full bg-green-500 hover:bg-green-600 text-white py-6 text-lg"
+          disabled={isLoading}
+        >
           {isLoading ? 'Creating Pool...' : 'Create Pool'}
         </Button>
       </form>
-    </Card>
+    </div>
   );
 } 

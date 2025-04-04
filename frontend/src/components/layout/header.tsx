@@ -62,20 +62,20 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center cursor-pointer">
-            <div className="relative h-10 w-10 mr-3">
+            <div className="relative h-10 w-80 mr-3">
               <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
                 <Image
-                  src="/logo.png"
+                  src="/logoWhite.png"
                   alt="Hypernova Logo"
-                  width={24}
+                  width={240}
                   height={24}
-                  className="rounded-full"
+                  className="rounded-32 bg-black"
                 />
               </div>
             </div>
-            <span className="text-2xl font-bold tracking-tight retro-glow">
+            {/* <span className="text-2xl font-bold tracking-tight retro-glow">
               Hypernova
-            </span>
+            </span> */}
           </Link>
 
           {/* Desktop Navigation */}
