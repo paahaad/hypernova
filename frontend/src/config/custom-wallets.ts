@@ -28,7 +28,7 @@ declare global {
 export class BackpackWalletAdapter extends BaseWalletAdapter {
   name = 'Backpack' as WalletName;
   url = 'https://www.backpack.app';
-  icon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6IiBmaWxsPSIjZmZmIi8+PC9zdmc+';
+  icon = '/assets/wallets/backpack.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
@@ -92,7 +92,7 @@ export class BackpackWalletAdapter extends BaseWalletAdapter {
 export class OKXWalletAdapter extends BaseWalletAdapter {
   name = 'OKX' as WalletName;
   url = 'https://www.okx.com';
-  icon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6IiBmaWxsPSIjZmZmIi8+PC9zdmc+';
+  icon = '/assets/wallets/okx.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
@@ -156,7 +156,7 @@ export class OKXWalletAdapter extends BaseWalletAdapter {
 export class BybitWalletAdapter extends BaseWalletAdapter {
   name = 'Bybit' as WalletName;
   url = 'https://www.bybit.com';
-  icon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6IiBmaWxsPSIjZmZmIi8+PC9zdmc+';
+  icon = '/assets/wallets/bybit.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
