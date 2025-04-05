@@ -1,5 +1,5 @@
-import { BaseWalletAdapter, WalletName, WalletReadyState, WalletError } from '@solana/wallet-adapter-base';
-import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { BaseWalletAdapter, WalletName, WalletReadyState, WalletError, WalletAdapterProps, SupportedTransactionVersions } from '@solana/wallet-adapter-base';
+import { PublicKey, Transaction, VersionedTransaction, Connection, SendOptions, TransactionVersion } from '@solana/web3.js';
 
 declare global {
   interface Window {
@@ -26,15 +26,19 @@ declare global {
 
 // Custom Backpack Wallet Adapter
 export class BackpackWalletAdapter extends BaseWalletAdapter {
-  name = 'Backpack' as WalletName;
+  name = 'Backpack' as WalletName<'Backpack'>;
   url = 'https://www.backpack.app';
   icon = '/assets/wallets/backpack.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
-  supportedTransactionVersions = new Set(['legacy', 0]);
+  supportedTransactionVersions: SupportedTransactionVersions = new Set(['legacy', 0] as TransactionVersion[]);
 
-  async connect() {
+  constructor() {
+    super();
+  }
+
+  async connect(): Promise<void> {
     if (!window.backpack) {
       throw new Error('Backpack wallet not found');
     }
@@ -51,7 +55,7 @@ export class BackpackWalletAdapter extends BaseWalletAdapter {
     }
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     if (!window.backpack) {
       throw new Error('Backpack wallet not found');
     }
@@ -79,26 +83,34 @@ export class BackpackWalletAdapter extends BaseWalletAdapter {
     return window.backpack.signAllTransactions(transactions);
   }
 
-  async sendTransaction(transaction: Transaction, connection: any): Promise<string> {
+  async sendTransaction(
+    transaction: Transaction,
+    connection: Connection,
+    options?: SendOptions
+  ): Promise<string> {
     if (!window.backpack) {
       throw new Error('Backpack wallet not found');
     }
     const signed = await this.signTransaction(transaction);
-    return connection.sendRawTransaction(signed.serialize());
+    return connection.sendRawTransaction(signed.serialize(), options);
   }
 }
 
 // Custom OKX Wallet Adapter
 export class OKXWalletAdapter extends BaseWalletAdapter {
-  name = 'OKX' as WalletName;
+  name = 'OKX' as WalletName<'OKX'>;
   url = 'https://www.okx.com';
   icon = '/assets/wallets/okx.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
-  supportedTransactionVersions = new Set(['legacy', 0]);
+  supportedTransactionVersions: SupportedTransactionVersions = new Set(['legacy', 0] as TransactionVersion[]);
 
-  async connect() {
+  constructor() {
+    super();
+  }
+
+  async connect(): Promise<void> {
     if (!window.okxwallet) {
       throw new Error('OKX wallet not found');
     }
@@ -115,7 +127,7 @@ export class OKXWalletAdapter extends BaseWalletAdapter {
     }
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     if (!window.okxwallet) {
       throw new Error('OKX wallet not found');
     }
@@ -143,26 +155,34 @@ export class OKXWalletAdapter extends BaseWalletAdapter {
     return window.okxwallet.signAllTransactions(transactions);
   }
 
-  async sendTransaction(transaction: Transaction, connection: any): Promise<string> {
+  async sendTransaction(
+    transaction: Transaction,
+    connection: Connection,
+    options?: SendOptions
+  ): Promise<string> {
     if (!window.okxwallet) {
       throw new Error('OKX wallet not found');
     }
     const signed = await this.signTransaction(transaction);
-    return connection.sendRawTransaction(signed.serialize());
+    return connection.sendRawTransaction(signed.serialize(), options);
   }
 }
 
 // Custom Bybit Wallet Adapter
 export class BybitWalletAdapter extends BaseWalletAdapter {
-  name = 'Bybit' as WalletName;
+  name = 'Bybit' as WalletName<'Bybit'>;
   url = 'https://www.bybit.com';
   icon = '/assets/wallets/bybit.svg';
   readyState: WalletReadyState = WalletReadyState.Installed;
   publicKey: PublicKey | null = null;
   connecting = false;
-  supportedTransactionVersions = new Set(['legacy', 0]);
+  supportedTransactionVersions: SupportedTransactionVersions = new Set(['legacy', 0] as TransactionVersion[]);
 
-  async connect() {
+  constructor() {
+    super();
+  }
+
+  async connect(): Promise<void> {
     if (!window.bybit) {
       throw new Error('Bybit wallet not found');
     }
@@ -179,7 +199,7 @@ export class BybitWalletAdapter extends BaseWalletAdapter {
     }
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     if (!window.bybit) {
       throw new Error('Bybit wallet not found');
     }
@@ -207,11 +227,15 @@ export class BybitWalletAdapter extends BaseWalletAdapter {
     return window.bybit.signAllTransactions(transactions);
   }
 
-  async sendTransaction(transaction: Transaction, connection: any): Promise<string> {
+  async sendTransaction(
+    transaction: Transaction,
+    connection: Connection,
+    options?: SendOptions
+  ): Promise<string> {
     if (!window.bybit) {
       throw new Error('Bybit wallet not found');
     }
     const signed = await this.signTransaction(transaction);
-    return connection.sendRawTransaction(signed.serialize());
+    return connection.sendRawTransaction(signed.serialize(), options);
   }
 } 

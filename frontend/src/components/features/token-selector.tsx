@@ -100,6 +100,17 @@ export function TokenSelector({ isOpen, onClose, onSelect, tokens, selectedToken
       return balanceB - balanceA;
     });
 
+  // Track copied states for all tokens
+  const [copiedTokenAddress, setCopiedTokenAddress] = useState<string | null>(null);
+  
+  const handleCopy = (e: React.MouseEvent, address: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(address);
+    setCopiedTokenAddress(address);
+    toast.success("Address copied to clipboard");
+    setTimeout(() => setCopiedTokenAddress(null), 2000);
+  };
+
   const Content = () => (
     <>
       <div className="p-4 bg-black/80 backdrop-blur-xl">
@@ -119,79 +130,67 @@ export function TokenSelector({ isOpen, onClose, onSelect, tokens, selectedToken
         </div>
         <ScrollArea className="h-[500px]">
           <div className="space-y-2">
-            {filteredTokens.map((token) => {
-              const [copied, setCopied] = useState(false);
-
-              const handleCopy = (e: React.MouseEvent) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(token.address);
-                setCopied(true);
-                toast.success("Address copied to clipboard");
-                setTimeout(() => setCopied(false), 2000);
-              };
-
-              return (
-                <button
-                  key={token.address}
-                  onClick={() => {
-                    onSelect(token);
-                    onClose();
-                  }}
-                  className={`w-full p-3 rounded-lg flex items-center space-x-4 transition-all ${
-                    selectedToken?.address === token.address 
-                      ? "bg-gray-800/50 border border-gray-600" 
-                      : "hover:bg-gray-800/50 border border-gray-700"
-                  }`}
-                >
-                  <div className="relative w-10 h-10">
-                    <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
-                      <img
-                        src={token.logoURI}
-                        alt={token.symbol}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    </div>
+            {filteredTokens.map((token) => (
+              <button
+                key={token.address}
+                onClick={() => {
+                  onSelect(token);
+                  onClose();
+                }}
+                className={`w-full p-3 rounded-lg flex items-center space-x-4 transition-all ${
+                  selectedToken?.address === token.address 
+                    ? "bg-gray-800/50 border border-gray-600" 
+                    : "hover:bg-gray-800/50 border border-gray-700"
+                }`}
+              >
+                <div className="relative w-10 h-10">
+                  <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
+                    <img
+                      src={token.logoURI}
+                      alt={token.symbol}
+                      className="w-8 h-8 rounded-full"
+                    />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col items-start">
-                        <span className="text-lg font-medium text-gray-200">{token.symbol}</span>
-                        <span className="text-base text-gray-400">{token.name}</span>
-                      </div>
-                      {tokenBalances[token.address] !== undefined && (
-                        <span className="text-base text-gray-300">
-                          {tokenBalances[token.address].toFixed(4)}
-                        </span>
-                      )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col items-start">
+                      <span className="text-lg font-medium text-gray-200">{token.symbol}</span>
+                      <span className="text-base text-gray-400">{token.name}</span>
                     </div>
-                    <div className="mt-1 flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        {`${token.address.slice(0, 4)}...${token.address.slice(-4)}`}
+                    {tokenBalances[token.address] !== undefined && (
+                      <span className="text-base text-gray-300">
+                        {tokenBalances[token.address].toFixed(4)}
                       </span>
-                      <button
-                        onClick={handleCopy}
-                        className="text-gray-500 hover:text-gray-300 transition-colors"
-                      >
-                        {copied ? (
-                          <Check className="w-3 h-3" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
-                      <a
-                        href={`https://explorer.sonic.game/address/${token.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-gray-500 hover:text-gray-300 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
+                    )}
                   </div>
-                </button>
-              );
-            })}
+                  <div className="mt-1 flex items-center space-x-2">
+                    <span className="text-xs text-gray-500">
+                      {`${token.address.slice(0, 4)}...${token.address.slice(-4)}`}
+                    </span>
+                    <button
+                      onClick={(e) => handleCopy(e, token.address)}
+                      className="text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                      {copiedTokenAddress === token.address ? (
+                        <Check className="w-3 h-3" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                    <a
+                      href={`https://explorer.sonic.game/address/${token.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
         </ScrollArea>
       </div>
