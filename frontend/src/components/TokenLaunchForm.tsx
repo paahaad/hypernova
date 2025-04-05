@@ -26,6 +26,7 @@ interface FormData {
 export default function TokenLaunchForm() {
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const [finalUri, setFinalUri] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     name: '',
     ticker: '',
@@ -45,6 +46,50 @@ export default function TokenLaunchForm() {
     }
   };
 
+  const uploadToPinata = async (file: File) => {
+    try {
+      const data = new FormData();
+      data.set('file', file);
+      
+      const uploadResponse = await fetch('/api/pinata/upload', {
+        method: 'POST',
+        body: data,
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image to Pinata');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      return uploadResult.url;
+    } catch (error) {
+      console.error('Error uploading to Pinata:', error);
+      throw error;
+    }
+  };
+
+  const uploadMetadataToPinata = async (metadata: object) => {
+    try {
+      const response = await fetch('/api/pinata/metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(metadata),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload metadata to Pinata');
+      }
+      
+      const result = await response.json();
+      return result.url;
+    } catch (error) {
+      console.error('Error uploading metadata to Pinata:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -53,10 +98,35 @@ export default function TokenLaunchForm() {
       return;
     }
 
+    if (!formData.image) {
+      toast.error('Please upload an image');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // TODO: Upload image to IPFS or similar and get URI
-      const imageUri = "https://placeholder.com/image.jpg"; // Replace with actual image upload
+      // Upload image to Pinata
+      const imageUrl = await uploadToPinata(formData.image);
+      
+      // Create metadata object
+      const metadata = {
+        name: formData.name,
+        symbol: formData.ticker,
+        description: formData.description,
+        image: imageUrl,
+        attributes: [
+          {
+            trait_type: "Total Supply",
+            value: formData.totalSupply
+          }
+        ]
+      };
+      
+      // Upload metadata to Pinata
+      const metadataUrl = await uploadMetadataToPinata(metadata);
+      
+      // Save the metadata URL
+      setFinalUri(metadataUrl);
 
       const response = await fetch('/api/presale', {
         method: 'POST',
@@ -66,7 +136,7 @@ export default function TokenLaunchForm() {
         body: JSON.stringify({
           name: formData.name,
           symbol: formData.ticker,
-          uri: imageUri,
+          uri: metadataUrl,
           description: formData.description,
           totalSupply: parseInt(formData.totalSupply),
           tokenPrice: parseFloat(formData.tokenPrice),
