@@ -6,9 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSolanaWallets } from '@privy-io/react-auth';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
+import { useWallet } from '@solana/wallet-adapter-react';
+
 interface TokenDetailsProps {
   params: {
     mint_address: string;
@@ -36,8 +37,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
   const [loading, setLoading] = useState(true);
   const [tokenAmount, setTokenAmount] = useState<number | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const { wallets, ready } = useSolanaWallets();
-  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const { publicKey, sendTransaction, connected } = useWallet();
 
   useEffect(() => {
     const fetchPresaleData = async () => {
@@ -93,15 +93,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
   const handlePurchase = async () => {
     if (!presaleData || !selectedAmount) return;
   
-
-    if (!wallets || !wallets.length) {
-      toast.error('Please connect your wallet');
-      return;
-    }
-
-    const wallet = wallets[0];
-
-    if (!wallet) {
+    if (!connected || !publicKey) {
       toast.error('Please connect your wallet');
       return;
     }
@@ -116,24 +108,22 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
         body: JSON.stringify({
           mintAddress: params.mint_address,
           amount: parseFloat(selectedAmount),
-          userAddress: wallet.address,
+          userAddress: publicKey.toString(),
         }),
       });
 
       const data = await response.json();
-      const tx = data.tx;
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process purchase');
       }
 
+      const tx = data.tx;
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
-      const signature = await wallet.sendTransaction(txData, connection);
+      const signature = await sendTransaction(txData, connection);
 
       toast.success('Purchase successful');
-      // Handle the transaction data here
-      // You might want to show a success message or redirect
-      console.log('Purchase successful:', data);
+      console.log('Purchase successful:', signature);
     } catch (err: any) {
       toast.error(err.message || 'Failed to process purchase');
     } finally {
@@ -181,8 +171,16 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-400">${presaleData.symbol}</span>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span className="text-xs">{presaleData.mint_address}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => {
+                navigator.clipboard.writeText(presaleData.mint_address);
+                toast.success('Address copied to clipboard');
+              }}
+            >
+              <span className="text-xs">{presaleData.mint_address.slice(0, 6)}...{presaleData.mint_address.slice(-4)}</span>
               <Copy className="h-3 w-3" />
             </Button>
           </div>
@@ -230,9 +228,13 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
             <Button 
               className="w-full bg-red-500 hover:bg-red-600"
               onClick={handlePurchase}
-              disabled={isPurchasing}
+              disabled={isPurchasing || !connected}
             >
-              {isPurchasing ? 'Processing...' : 'Buy'}
+              {!connected 
+                ? 'Connect Wallet to Buy' 
+                : isPurchasing 
+                  ? 'Processing...' 
+                  : 'Buy'}
             </Button>
           </CardContent>
         </Card>

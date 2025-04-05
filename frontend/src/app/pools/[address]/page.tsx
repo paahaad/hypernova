@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSolanaWallets } from '@privy-io/react-auth';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { wallet } from '@/lib/orca';
 
 interface PoolDetails {
@@ -29,7 +29,8 @@ export default function PoolDetailsPage() {
   const [lowerPrice, setLowerPrice] = useState('');
   const [upperPrice, setUpperPrice] = useState('');
 
-  const { wallets } = useSolanaWallets();
+  const { publicKey, connected } = useWallet();
+  
   useEffect(() => {
     const fetchPoolDetails = async () => {
       try {
@@ -50,6 +51,11 @@ export default function PoolDetailsPage() {
 
   const handleAddLiquidity = async () => {
     if (!pool || !tokenAAmount || !tokenBAmount || !lowerPrice || !upperPrice) return;
+    
+    if (!connected || !publicKey) {
+      console.error('Wallet not connected');
+      return;
+    }
 
     try {
       const response = await fetch('/api/pools/add-liquidity', {
@@ -59,7 +65,7 @@ export default function PoolDetailsPage() {
         },
         body: JSON.stringify({
           poolAddress: pool.whirlpool_address,
-          userAddress: wallets[0].address,
+          userAddress: publicKey.toString(),
           tokenAAmount: parseFloat(tokenAAmount),
           tokenBAmount: parseFloat(tokenBAmount),
           priceLower: parseFloat(lowerPrice),
@@ -174,9 +180,12 @@ export default function PoolDetailsPage() {
               <Button
                 onClick={handleAddLiquidity}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-6 rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
-                disabled={!tokenAAmount || !tokenBAmount || !lowerPrice || !upperPrice}
+                disabled={!tokenAAmount || !tokenBAmount || !lowerPrice || !upperPrice || !connected}
               >
-                Add Liquidity
+                {!connected 
+                 ? 'Connect Wallet to Add Liquidity' 
+                 : 'Add Liquidity'
+                }
               </Button>
             </div>
           </Card>
