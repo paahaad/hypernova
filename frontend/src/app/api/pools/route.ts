@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from "@/lib/supabase/server";
+import { envBACKEND_URL } from '@/lib/env';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = envBACKEND_URL;
 
 export async function POST(request: Request) {
     try {

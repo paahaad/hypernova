@@ -1,0 +1,12 @@
+export const envNEXT_PUBLIC_PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || '';
+export const envRPC_URL = process.env.RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
+export const envNEXT_PUBLIC_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
+export const envSUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL || '';
+export const envNEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+export const envNEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export const envSUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+export const envBACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+export const envPINATA_API_KEY = process.env.PINATA_API_KEY || '';
+export const envPINATA_API_SECRET = process.env.PINATA_API_SECRET || '';
+export const envPINATA_JWT = process.env.PINATA_JWT || '';
+export const envNEXT_PUBLIC_GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || ''; 

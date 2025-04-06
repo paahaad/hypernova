@@ -2,10 +2,11 @@ import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import IDL from './idl.json';
 import { Hypernova } from './idlType';
+import { envRPC_URL } from './env';
 
 // Initialize connection
 export const connection = new Connection(
-    process.env.RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899',
+    envRPC_URL,
     'confirmed'
 );
 

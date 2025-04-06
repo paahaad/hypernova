@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { envNEXT_PUBLIC_SUPABASE_URL, envSUPABASE_SERVICE_ROLE_KEY } from '../env'
 
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  envNEXT_PUBLIC_SUPABASE_URL,
+  envSUPABASE_SERVICE_ROLE_KEY
 ) 

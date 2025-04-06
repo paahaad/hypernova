@@ -1,11 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { PinataSDK } from "pinata";
-
-// Initialize Pinata SDK with environment variables
-const pinata = new PinataSDK({
-  pinataJwt: process.env.PINATA_JWT as string,
-  pinataGateway: process.env.NEXT_PUBLIC_GATEWAY_URL as string
-});
+import { pinata } from "@/lib/pinata";
 
 export async function POST(request: NextRequest) {
   try {
