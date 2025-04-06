@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { wallet } from '@/lib/orca';
 
@@ -85,8 +86,64 @@ export default function PoolDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading pool details...</div>
+      <div className="min-h-screen bg-black">
+        <div className="relative p-8">
+          {/* Background elements */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
+          </div>
+
+          <div className="max-w-4xl mx-auto relative z-10">
+            <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 text-white p-6 rounded-xl">
+              <Skeleton className="h-8 w-64 mb-6" />
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Skeleton className="h-4 w-28 mb-2" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-28 mb-2" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-5 w-full" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                  </div>
+                </div>
+
+                <Skeleton className="h-14 w-full rounded-xl" />
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
