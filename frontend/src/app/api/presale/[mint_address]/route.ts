@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/server";
 import { getProgramWithDummyWallet } from "@/lib/anchor";
+import { PublicKey } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 
 export async function GET(
     req: Request,
@@ -63,7 +65,7 @@ export async function POST(
     { params }: { params: { mint_address: string } }
 ) {
     try {
-        const program =  getProgramWithDummyWallet();
+        const program = getProgramWithDummyWallet();
         const mintAddress = params.mint_address;
         const { solAmount } = await req.json();
 
@@ -126,8 +128,9 @@ export async function POST(
             );
         }
 
-        const presaleAccount = await program.account.presaleInfo.fetch(data.presale_address);
-        const token_price = Number(presaleAccount.tokenPrice);
+        const presaleAddress = new PublicKey(data.presale_address);
+        const presaleAccount = await program.account.presaleInfo.fetch(presaleAddress);
+        const token_price = presaleAccount.tokenPrice.toNumber();
         // Calculate token amount
         const tokenAmount = solAmountLamports / token_price;
 
