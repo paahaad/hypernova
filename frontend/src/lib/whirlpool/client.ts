@@ -153,7 +153,8 @@ export const getConnection = async (): Promise<Connection> => {
 export const getKeyPairAndWallet = async (): Promise<{ keyPair: Keypair, wallet: Wallet }> => {
     await whirlpoolInstance.initialize();
     const wallet = whirlpoolInstance.wallet;
-    // @ts-expect-error
+    // @ts-expect-error: _signer is private
+
     const keyPair = wallet._signer;
     return { keyPair, wallet };
 };
