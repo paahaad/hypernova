@@ -29,9 +29,9 @@ pub struct PurchaseTokens<'info> {
     )]
     pub mint_account: Account<'info, Mint>,
 
-    /// CHECK: This is a safe account that we're just transferring SOL to
-    #[account(mut)]
-    pub vault: UncheckedAccount<'info>,
+    // /// CHECK: This is a safe account that we're just transferring SOL to
+    // #[account(mut)]
+    // pub vault: UncheckedAccount<'info>,
 
     #[account(
         init_if_needed,
@@ -86,14 +86,14 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
     // Tranfer sol
     let transfer_instruction = system_instruction::transfer(
         &ctx.accounts.user.key(),
-        &&ctx.accounts.vault.key(),
+        &&ctx.accounts.presale_account.key(),
         sol_amount * 1000000000,
     );
     invoke(
         &transfer_instruction,
         &[
             ctx.accounts.user.to_account_info(),
-            ctx.accounts.vault.to_account_info(),
+            ctx.accounts.presale_account.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;

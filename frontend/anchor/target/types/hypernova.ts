@@ -182,6 +182,34 @@ export type Hypernova = {
       ]
     },
     {
+      "name": "finalizePresale",
+      "discriminator": [
+        100,
+        245,
+        60,
+        81,
+        177,
+        232,
+        255,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "presaleAccount",
+          "writable": true
+        },
+        {
+          "name": "recipient",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "mintToken",
       "discriminator": [
         172,
@@ -495,10 +523,6 @@ export type Hypernova = {
               }
             ]
           }
-        },
-        {
-          "name": "vault",
-          "writable": true
         },
         {
           "name": "userTokenAccount",

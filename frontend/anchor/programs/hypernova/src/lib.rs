@@ -54,4 +54,8 @@ pub mod hypernova {
     pub fn purchase(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -> Result<()> {
         purchase::purchase_tokens(ctx, id, sol_amount)
     }
+
+    pub fn finalize_presale(ctx: Context<FinalizeSale>) -> Result<()> {
+        finalize_presale::finalize_sale(ctx)
+    }
 }

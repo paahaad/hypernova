@@ -1,0 +1,9 @@
+{
+  "/[mint_address]/page": "app/[mint_address]/page.js",
+  "/page": "app/page.js",
+  "/launch/page": "app/launch/page.js",
+  "/pools/page": "app/pools/page.js",
+  "/api/pools/route": "app/api/pools/route.js",
+  "/api/presale/[mint_address]/route": "app/api/presale/[mint_address]/route.js",
+  "/api/presale/route": "app/api/presale/route.js"
+}

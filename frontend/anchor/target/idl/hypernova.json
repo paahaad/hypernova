@@ -176,6 +176,34 @@
       ]
     },
     {
+      "name": "finalize_presale",
+      "discriminator": [
+        100,
+        245,
+        60,
+        81,
+        177,
+        232,
+        255,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "presale_account",
+          "writable": true
+        },
+        {
+          "name": "recipient",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "mint_token",
       "discriminator": [
         172,
@@ -489,10 +517,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "vault",
-          "writable": true
         },
         {
           "name": "user_token_account",
