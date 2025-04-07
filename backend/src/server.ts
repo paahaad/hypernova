@@ -8,6 +8,7 @@ import createPool from './functions/pools/createPool';
 import addLP from './functions/pools/addLP';
 import removeLP from './functions/pools/removeLP';
 import { ctx, config, configExtension } from './client';
+import { envPORT } from './env';
 
 const app: Application = express();
 app.use(express.json());
@@ -64,7 +65,7 @@ async function initializeWhirlpools() {
 async function startServer() {
     try {
         await initializeWhirlpools();
-        const PORT = process.env.PORT || 3000;
+        const PORT = envPORT;
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`API documentation available at http://localhost:${PORT}/api-docs`);

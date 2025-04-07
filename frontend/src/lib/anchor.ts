@@ -2,12 +2,17 @@ import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import IDL from './idl.json';
 import { Hypernova } from './idlType';
+import { envRPC_URL, envNEXT_PUBLIC_USE_MAINNET } from './env';
+import { getHypernovaProgramId } from '../../anchor/src/hypernova-exports';
 
 // Initialize connection
 export const connection = new Connection(
-    process.env.RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899',
+    envRPC_URL,
     'confirmed'
 );
+
+// Get the appropriate program ID based on environment
+export const programId = getHypernovaProgramId();
 
 export const dummyWallet: Wallet = {
     publicKey: Keypair.generate().publicKey,
@@ -26,7 +31,8 @@ export const getProvider = (wallet: Wallet) => {
 // Initialize program
 export const getProgram = (wallet: Wallet) => {
     const provider = getProvider(wallet);
-    return new Program<Hypernova>(IDL, provider);
+    const address = programId.toBase58();
+    return new Program({ ...IDL, address } as any, provider);
 };
 
 export const getProgramWithDummyWallet = () => {

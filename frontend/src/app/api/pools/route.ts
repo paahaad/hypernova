@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from "@/lib/supabase/server";
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+import { PublicKey } from '@solana/web3.js';
+import { createPool } from '@/lib/whirlpool/functions/createPool';
 
 export async function POST(request: Request) {
     try {
@@ -44,23 +44,12 @@ export async function POST(request: Request) {
             );
         }
 
-        // Forward the request to the backend
-        const response = await fetch(`${BACKEND_URL}/pool`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-
-        const data = await response.json();
-
-        const tx = data.tx;
-        const whirlpoolAddress = data.whirlpoolAddress;
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to create pool');
-        }
+        // Create a new pool using direct implementation
+        const result = await createPool(
+            new PublicKey(body.tokenMintA),
+            new PublicKey(body.tokenMintB),
+            new PublicKey(body.userAddress)
+        );
 
         // Save pool data to Supabase
         const { error: supabaseError } = await supabase
@@ -68,7 +57,7 @@ export async function POST(request: Request) {
             .insert({
                 token_mint_a: body.tokenMintA,
                 token_mint_b: body.tokenMintB,
-                whirlpool_address: whirlpoolAddress,
+                whirlpool_address: result.whirlpoolAddress,
                 created_at: new Date().toISOString(),
             });
 
@@ -77,7 +66,11 @@ export async function POST(request: Request) {
             // Don't throw error here, as the pool was created successfully
         }
 
-        return NextResponse.json({ success: true, tx, whirlpoolAddress });
+        return NextResponse.json({ 
+            success: true, 
+            tx: result.tx, 
+            whirlpoolAddress: result.whirlpoolAddress 
+        });
     } catch (error) {
         console.error('Error creating pool:', error);
         return NextResponse.json(

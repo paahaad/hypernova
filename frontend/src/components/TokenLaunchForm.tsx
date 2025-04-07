@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { usePrivy, useSolanaWallets } from '@privy-io/react-auth';
 import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface FormData {
   name: string;
@@ -24,17 +24,17 @@ interface FormData {
 }
 
 export default function TokenLaunchForm() {
-  const { wallets, ready } = useSolanaWallets();
-  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const [finalUri, setFinalUri] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     name: '',
     ticker: '',
     description: '',
     image: null,
-    totalSupply: '',
-    tokenPrice: '',
-    minPurchase: '',
+    totalSupply: '1000000000',
+    tokenPrice: '0.00001',
+    minPurchase: '0.01',
     maxPurchase: '',
     presalePercentage: 50,
     endTime: '',
@@ -46,29 +46,87 @@ export default function TokenLaunchForm() {
     }
   };
 
+  const uploadToPinata = async (file: File) => {
+    try {
+      const data = new FormData();
+      data.set('file', file);
+      
+      const uploadResponse = await fetch('/api/pinata/upload', {
+        method: 'POST',
+        body: data,
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image to Pinata');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      return uploadResult.url;
+    } catch (error) {
+      console.error('Error uploading to Pinata:', error);
+      throw error;
+    }
+  };
+
+  const uploadMetadataToPinata = async (metadata: object) => {
+    try {
+      const response = await fetch('/api/pinata/metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(metadata),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload metadata to Pinata');
+      }
+      
+      const result = await response.json();
+      return result.url;
+    } catch (error) {
+      console.error('Error uploading metadata to Pinata:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('handleSubmit');
     e.preventDefault();
     
-    console.log('ready', ready);
-    console.log('wallets', wallets);
-    if (!ready || wallets.length === 0) {
-      console.log('not ready or no wallets');
+    if (!connected || !publicKey) {
       toast.error('Please connect your wallet first');
       return;
     }
 
-    const walletAddress = wallets[0].address;
-    if (!walletAddress) {
-      console.log('no wallet address');
-      toast.error('Please connect your wallet first');
+    if (!formData.image) {
+      toast.error('Please upload an image');
       return;
     }
 
     setIsLoading(true);
     try {
-      // TODO: Upload image to IPFS or similar and get URI
-      const imageUri = "https://placeholder.com/image.jpg"; // Replace with actual image upload
+      // Upload image to Pinata
+      const imageUrl = await uploadToPinata(formData.image);
+      
+      // Create metadata object
+      const metadata = {
+        name: formData.name,
+        symbol: formData.ticker,
+        description: formData.description,
+        image: imageUrl,
+        attributes: [
+          {
+            trait_type: "Total Supply",
+            value: formData.totalSupply
+          }
+        ]
+      };
+      
+      // Upload metadata to Pinata
+      const metadataUrl = await uploadMetadataToPinata(metadata);
+      
+      // Save the metadata URL
+      setFinalUri(metadataUrl);
 
       const response = await fetch('/api/presale', {
         method: 'POST',
@@ -78,14 +136,15 @@ export default function TokenLaunchForm() {
         body: JSON.stringify({
           name: formData.name,
           symbol: formData.ticker,
-          uri: imageUri,
+          uri: metadataUrl,
+          description: formData.description,
           totalSupply: parseInt(formData.totalSupply),
           tokenPrice: parseFloat(formData.tokenPrice),
           minPurchase: parseFloat(formData.minPurchase),
           maxPurchase: parseFloat(formData.maxPurchase),
           presalePercentage: formData.presalePercentage,
           endTime: Math.floor(new Date(formData.endTime).getTime() / 1000),
-          userAddress: walletAddress,
+          userAddress: publicKey.toString(),
         }),
       });
 
@@ -98,7 +157,8 @@ export default function TokenLaunchForm() {
       const tx = data.tx;
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
       
-      const signature = await wallets[0].sendTransaction(txData, connection);
+      // Sign and send transaction using wallet adapter
+      const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
 
       toast.success('Token created successfully!');
@@ -186,7 +246,7 @@ export default function TokenLaunchForm() {
                 required
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm text-gray-300 mb-2">Token Price (SOL)</label>
               <Input
                 type="number"
@@ -195,7 +255,7 @@ export default function TokenLaunchForm() {
                 className="w-full bg-gray-800/50 border-gray-700"
                 required
               />
-            </div>
+            </div> */}
           </div>
         </Card>
 
@@ -204,7 +264,7 @@ export default function TokenLaunchForm() {
           <h3 className="text-lg font-medium text-gray-200 mb-4">Presale Configuration</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Presale Percentage</label>
+              <label className="block text-sm text-gray-300 mb-2">Tokens for DEV / Presale Percentage</label>
               <div className="flex gap-4">
                 {[50, 30, 0].map((percentage) => (
                   <Button
@@ -219,7 +279,7 @@ export default function TokenLaunchForm() {
                 ))}
               </div>
             </div>
-
+{/* 
             <div>
               <label className="block text-sm text-gray-300 mb-2">Min Purchase (SOL)</label>
               <Input
@@ -229,7 +289,7 @@ export default function TokenLaunchForm() {
                 className="w-full bg-gray-800/50 border-gray-700"
                 required
               />
-            </div>
+            </div> */}
 
             <div>
               <label className="block text-sm text-gray-300 mb-2">Max Purchase (SOL)</label>
@@ -259,9 +319,14 @@ export default function TokenLaunchForm() {
         <Button
           type="submit"
           className="w-full bg-green-500 hover:bg-green-600 text-white py-6 text-lg"
-          disabled={isLoading}
+          disabled={isLoading || !connected}
         >
-          {isLoading ? 'Creating Token...' : 'Launch Token'}
+          {!connected 
+            ? 'Connect Your Wallet to Continue'
+            : isLoading 
+              ? 'Creating Token...' 
+              : 'Launch Token'
+          }
         </Button>
       </form>
     </div>

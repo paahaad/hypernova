@@ -13,6 +13,8 @@ import { connection } from "@/lib/anchor";
 import { CustomWalletButton } from "../features/custom-wallet-button";
 import { MobileWalletButton } from "../features/custom-wallet-button";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { envRPC_URL, envMAINNET_RPC_URL, envTESTNET_RPC_URL, envNEXT_PUBLIC_USE_MAINNET } from "@/lib/env";
+import { NETWORK_NAME } from "@/config/environment";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,8 +31,8 @@ export function Header() {
     const fetchSolBalance = async () => {
       if (publicKey) {
         try {
-          // Try to fetch Sonic balance
-          const sonicBalance = await new Connection(`https://api.mainnet-alpha.sonic.game`)
+          // Use the correct RPC endpoint based on environment
+          const sonicBalance = await new Connection(envRPC_URL)
             .getBalance(publicKey)
             .then(bal => bal/ 1e9);
           
@@ -67,7 +69,7 @@ export function Header() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center cursor-pointer">
+          <Link href="/" className="flex flex-col items-start cursor-pointer relative">
             <div className="relative h-10 w-48 md:w-80 mr-3">
               <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
                 <Image
@@ -78,10 +80,10 @@ export function Header() {
                   className="rounded-32 bg-black"
                 />
               </div>
+              <div className="absolute -bottom-6 right-8 text-[10px] md:text-xs font-medium text-white bg-purple-600/40 border border-purple-500/30 px-2 py-0.5 rounded-sm">
+                {NETWORK_NAME}
+              </div>
             </div>
-            {/* <span className="text-2xl font-bold tracking-tight retro-glow">
-              Hypernova
-            </span> */}
           </Link>
 
           {/* Desktop Navigation */}

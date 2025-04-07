@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from "@/lib/supabase/server";
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+import { PublicKey } from '@solana/web3.js';
+import { addLiquidity } from '@/lib/whirlpool/functions/addLiquidity';
 
 export async function POST(request: Request) {
     try {
@@ -29,33 +29,22 @@ export async function POST(request: Request) {
             );
         }
 
-        console.table({"poolAddress" : body.poolAddress, "tokenAAmount" : body.tokenAAmount, "tokenBAmount" : body.tokenBAmount, "priceLower" : body.priceLower, "priceUpper" : body.priceUpper})
+        console.table({"poolAddress": body.poolAddress, "tokenAAmount": body.tokenAAmount, "tokenBAmount": body.tokenBAmount, "priceLower": body.priceLower, "priceUpper": body.priceUpper});
 
-        // Forward the request to the backend
-        const response = await fetch(`${BACKEND_URL}/liquidity/add`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                whirlpoolAddress: body.poolAddress,
-                userAddress: body.userAddress,
-                tokenAmountA: body.tokenAAmount,
-                tokenAmountB: body.tokenBAmount,
-                priceLower: body.priceLower,
-                priceUpper: body.priceUpper,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to add liquidity');
-        }
+        // Add liquidity using our direct implementation
+        const result = await addLiquidity(
+            new PublicKey(body.poolAddress),
+            new PublicKey(body.userAddress),
+            body.tokenAAmount,
+            body.tokenBAmount,
+            body.priceLower,
+            body.priceUpper
+        );
 
         return NextResponse.json({ 
             success: true, 
-            tx: data.tx,
+            tx: result.tx,
+            positionMint: result.positionMint,
             message: 'Liquidity added successfully'
         });
     } catch (error) {

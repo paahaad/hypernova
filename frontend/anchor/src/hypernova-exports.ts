@@ -3,6 +3,7 @@ import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { Cluster, PublicKey } from '@solana/web3.js'
 import HypernovaIDL from '../target/idl/hypernova.json'
 import type { Hypernova } from '../target/types/hypernova'
+import { isMainnetEnvironment } from '@/config/environment'
 
 // Re-export the generated IDL and type
 export { Hypernova, HypernovaIDL }
@@ -16,7 +17,18 @@ export function getHypernovaProgram(provider: AnchorProvider, address?: PublicKe
 }
 
 // This is a helper function to get the program ID for the Hypernova program depending on the cluster.
-export function getHypernovaProgramId(cluster: Cluster) {
+export function getHypernovaProgramId() {
+  if (isMainnetEnvironment()) {
+    // This is the program ID for the Hypernova program on mainnet
+    return HYPERNOVA_PROGRAM_ID
+  } else {
+    // This is the program ID for the Hypernova program on devnet and testnet.
+    return new PublicKey('coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF')
+  }
+}
+
+// For compatibility with existing code
+export function getHypernovaProgramIdLegacy(cluster: Cluster) {
   switch (cluster) {
     case 'devnet':
     case 'testnet':
