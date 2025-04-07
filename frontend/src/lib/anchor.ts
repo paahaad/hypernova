@@ -11,6 +11,11 @@ import { Hypernova } from "./idlType";
 import { envRPC_URL, envNEXT_PUBLIC_USE_MAINNET } from "./env";
 import { getHypernovaProgramId } from "../../anchor/src/hypernova-exports";
 
+import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
+import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { envRPC_URL, envNEXT_PUBLIC_USE_MAINNET } from './env';
+import { getHypernovaProgramId, HypernovaIDL as IDL } from '../../anchor/src/hypernova-exports';
+
 // Initialize connection
 export const connection = new Connection(envRPC_URL, "confirmed");
 

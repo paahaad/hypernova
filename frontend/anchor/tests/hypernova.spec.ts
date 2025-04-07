@@ -41,10 +41,10 @@ describe("Hypernova", () => {
 
   it("should create a token and mint it successfully", async () => {
     try {
-      // Arrange
+      
       const id = Math.floor(10 + Math.random() * 90);
       const startTime = new anchor.BN(Date.now() / 1000);
-      const endTime = new anchor.BN(startTime.toNumber() + 86400); // 1 day later
+      const endTime = new anchor.BN(startTime.toNumber() + 86400);
       const values = {
         name: "Test Token",
         symbol: "TTK",
