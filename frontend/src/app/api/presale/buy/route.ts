@@ -46,7 +46,7 @@ export async function POST(req: Request) {
             .accounts({
                 user: userPubkey,
                 presaleAccount: presalePDA,
-                vault: VAULT,
+                // vault: VAULT,
             })
             .transaction();
 
