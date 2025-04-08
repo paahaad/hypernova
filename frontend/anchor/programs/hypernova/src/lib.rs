@@ -7,7 +7,7 @@ pub mod error;
 pub mod instructions;
 pub mod state;
 
-declare_id!("EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ");
+declare_id!("HeQRZFKyhr1DG7MV3FxrrrBTPqjyVCWSS6KiUhxUyrcb");
 
 #[program]
 pub mod hypernova {
@@ -25,7 +25,6 @@ pub mod hypernova {
         token_uri: String,
 
         total_supply: u64,
-        token_price: u64,
         min_purchase: u64,
         max_purchase: u64,
         presale_percentage: i8,
@@ -40,7 +39,6 @@ pub mod hypernova {
             token_symbol,
             token_uri,
             total_supply,
-            token_price,
             min_purchase,
             max_purchase,
             presale_percentage,

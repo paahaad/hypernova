@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/hypernova.json`.
  */
 export type Hypernova = {
-  "address": "EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ",
+  "address": "HeQRZFKyhr1DG7MV3FxrrrBTPqjyVCWSS6KiUhxUyrcb",
   "metadata": {
     "name": "hypernova",
     "version": "0.1.0",
@@ -161,10 +161,6 @@ export type Hypernova = {
         },
         {
           "name": "totalSupply",
-          "type": "u64"
-        },
-        {
-          "name": "tokenPrice",
           "type": "u64"
         },
         {

@@ -1,7 +1,7 @@
 import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import { Connection, Keypair, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { envRPC_URL } from './env';
-import { getHypernovaProgramId, Hypernova, HypernovaIDL as IDL } from '../../anchor/src/hypernova-exports';
+import { getHypernovaProgramId, Hypernova, HypernovaIDL } from '../../anchor/src/hypernova-exports';
 
 // Initialize connection
 export const connection = new Connection(envRPC_URL, "confirmed");
@@ -31,8 +31,9 @@ export const getProvider = (wallet: Wallet) => {
 export const getProgram = (wallet: Wallet) => {
   const provider = getProvider(wallet);
   const address = programId.toBase58();
+  console.log('IDL', HypernovaIDL);
   return new Program<Hypernova>(
-    IDL as Hypernova,
+    HypernovaIDL as Hypernova,
     address as any,
     provider as any
   );

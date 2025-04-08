@@ -29,7 +29,7 @@ pub struct PurchaseTokens<'info> {
     )]
     pub mint_account: Account<'info, Mint>,
 
-    // /// CHECK: This is a safe account that we're just transferring SOL to
+    /// CHECK: This is a safe account that we're just transferring SOL to
     // #[account(mut)]
     // pub vault: UncheckedAccount<'info>,
 
@@ -57,6 +57,7 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
 
     let tokens_to_purchase = sol_amount / ctx.accounts.presale_account.token_price;
 
+    msg!("tokens_to_purchase: {}", tokens_to_purchase);
     // Check if presale is active
     let current_time = Clock::get()?.unix_timestamp;
     require!(
@@ -87,7 +88,7 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
     let transfer_instruction = system_instruction::transfer(
         &ctx.accounts.user.key(),
         &&ctx.accounts.presale_account.key(),
-        sol_amount * 1000000000,
+        sol_amount,
     );
     invoke(
         &transfer_instruction,
@@ -97,7 +98,7 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;
-    msg!("Sol tranfer success!");
+    msg!("Sol tranfer success! {}", sol_amount);
 
     
     // PDA signer seeds

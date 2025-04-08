@@ -1,6 +1,6 @@
-import { getProgramWithDummyWallet, dummyWallet, connection } from "@/lib/anchor";
-import { BN } from "@coral-xyz/anchor";
-import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { getHypernovaProgram } from "@project/anchor";
+import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/server";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
@@ -11,6 +11,7 @@ interface PresaleInput {
     uri: string;
     description: string;
     totalSupply: number;
+    presaleAmount: number;
     tokenPrice: number;
     minPurchase: number;
     maxPurchase: number;
@@ -22,22 +23,33 @@ interface PresaleInput {
 export async function GET(req: Request) {
     const { data, error } = await supabase
         .from('presales')
-        .select('name, symbol, uri, total_supply, token_price, min_purchase, max_purchase, presale_percentage, end_time, user_address , mint_address, presale_address');
+        .select('name, symbol, uri, total_supply, min_purchase, max_purchase, presale_percentage, end_time, user_address , mint_address, presale_address');
 
     return NextResponse.json({ data, error });
 }
 
 export async function POST(req: Request) {
     try {
-        const program = getProgramWithDummyWallet();
+
+        const dummyWallet = new Keypair();
+        const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
+        const provider = new AnchorProvider(
+            connection,
+            { publicKey: dummyWallet.publicKey } as Wallet,
+            { commitment: "confirmed" }
+        );
+        const program = getHypernovaProgram(provider);
+        console.log("Program:", program);
 
         // Parse and validate input
         const body: PresaleInput = await req.json();
 
+        console.log("Body:", body)
         // Validate required fields
         if (!body.name || !body.symbol || !body.uri || !body.totalSupply ||
             !body.tokenPrice || !body.minPurchase || !body.maxPurchase ||
-            !body.presalePercentage || !body.endTime || !body.userAddress) {
+            !body.presaleAmount || !body.presalePercentage || !body.endTime ||
+            !body.userAddress) {
             return NextResponse.json(
                 { success: false, error: "Missing required fields" },
                 { status: 400 }
@@ -74,10 +86,10 @@ export async function POST(req: Request) {
             symbol: body.symbol,
             uri: body.uri,
             totalSupply: new BN(body.totalSupply),
-            tokenPrice: new BN(body.tokenPrice),
             minPurchase: new BN(body.minPurchase),
             maxPurchase: new BN(body.maxPurchase),
-            ticker: new BN(1),
+            // Assume ticker is presaleAmount TODO: Parvat, will rename this in contract
+            ticker: new BN(body.presaleAmount),
             presalePercentage: body.presalePercentage,
             startTime: new BN(currentTime),
             endTime: new BN(body.endTime),
@@ -97,7 +109,7 @@ export async function POST(req: Request) {
             program.programId
         );
 
-
+        console.log("Reaching here at 99")
         const { data, error } = await supabase
             .from('presales')
             .insert({
@@ -107,6 +119,7 @@ export async function POST(req: Request) {
                 uri: body.uri,
                 description: body.description,
                 total_supply: body.totalSupply,
+                // ticker as u64 / (total_supply * presale_percentage as u64 / 100);
                 token_price: body.tokenPrice,
                 min_purchase: body.minPurchase,
                 max_purchase: body.maxPurchase,
@@ -141,7 +154,6 @@ export async function POST(req: Request) {
                 values.symbol,
                 values.uri,
                 values.totalSupply,
-                values.tokenPrice,
                 values.minPurchase,
                 values.maxPurchase,
                 values.presalePercentage

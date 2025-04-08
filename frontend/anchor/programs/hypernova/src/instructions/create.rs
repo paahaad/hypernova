@@ -136,7 +136,7 @@ pub fn create_token(
     presale_info.developer = ctx.accounts.payer.key();
     
     presale_info.min_purchase = min_purchase;
-    presale_info.min_purchase = max_purchase;
+    presale_info.max_purchase = max_purchase;
     presale_info.bump = ctx.bumps.presale_account;
 
     presale_info.vault = Pubkey::try_from("2P2HLwVkfrzLNzFVxC91ek8dC6e2C6n25zDoY5vU5g9S").unwrap();
@@ -148,21 +148,3 @@ pub fn create_token(
 
     Ok(())
 }
-
-// pub struct PresaleInfo {
-//     pub start_time: i64,
-//     pub end_time: i64,
-//     pub tiker: i64,
-
-//     pub token_mint: Pubkey,
-//     pub total_supply: u64,
-//     pub available: u64,
-//     pub token_price: u64,
-//     pub developer: Pubkey,
-
-//     pub min_purchase: u64,
-//     pub max_purchase: u64,
-//     pub bump: u8,
-
-//     pub vault: Pubkey,
-// }

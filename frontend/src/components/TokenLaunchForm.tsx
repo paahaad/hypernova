@@ -19,6 +19,7 @@ interface FormData {
   tokenPrice: string;
   minPurchase: string;
   maxPurchase: string;
+  presaleAmount: number;
   presalePercentage: number;
   endTime: string;
 }
@@ -34,6 +35,7 @@ export default function TokenLaunchForm() {
     image: null,
     totalSupply: '1000000000',
     tokenPrice: '0.00001',
+    presaleAmount: 42,
     minPurchase: '0.01',
     maxPurchase: '',
     presalePercentage: 50,
@@ -139,7 +141,9 @@ export default function TokenLaunchForm() {
           uri: metadataUrl,
           description: formData.description,
           totalSupply: parseInt(formData.totalSupply),
-          tokenPrice: parseFloat(formData.tokenPrice),
+          presaleAmount: formData.presaleAmount * 1e9,
+          // Initial token price: amount as u64 / (total_supply * presale_percentage as u64 / 100);
+          tokenPrice: (formData.presaleAmount) / (parseInt(formData.totalSupply) * formData.presalePercentage / 100),
           minPurchase: parseFloat(formData.minPurchase),
           maxPurchase: parseFloat(formData.maxPurchase),
           presalePercentage: formData.presalePercentage,
@@ -275,6 +279,22 @@ export default function TokenLaunchForm() {
                     onClick={() => setFormData({ ...formData, presalePercentage: percentage })}
                   >
                     {percentage}%
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Presale Amount</label>
+              <div className="flex gap-4">
+                {[42, 111, 420].map((sol) => (
+                  <Button
+                    key={sol}
+                    type="button"
+                    variant={formData.presaleAmount === sol ? "default" : "outline"}
+                    className={formData.presaleAmount === sol ? "bg-orange-500" : "bg-orange-500/20"}
+                    onClick={() => setFormData({ ...formData, presaleAmount: sol })}
+                  >
+                    {sol} sol
                   </Button>
                 ))}
               </div>

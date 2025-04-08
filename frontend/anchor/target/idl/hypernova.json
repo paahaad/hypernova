@@ -1,5 +1,5 @@
 {
-  "address": "EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ",
+  "address": "HeQRZFKyhr1DG7MV3FxrrrBTPqjyVCWSS6KiUhxUyrcb",
   "metadata": {
     "name": "hypernova",
     "version": "0.1.0",
@@ -155,10 +155,6 @@
         },
         {
           "name": "total_supply",
-          "type": "u64"
-        },
-        {
-          "name": "token_price",
           "type": "u64"
         },
         {

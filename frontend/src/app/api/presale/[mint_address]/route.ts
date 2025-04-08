@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/server";
-import { getProgramWithDummyWallet } from "@/lib/anchor";
-import { PublicKey } from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
+import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
+import { getHypernovaProgram } from "@project/anchor";
+
 
 export async function GET(
     req: Request,
@@ -65,7 +66,15 @@ export async function POST(
     { params }: { params: { mint_address: string } }
 ) {
     try {
-        const program = getProgramWithDummyWallet();
+        const dummyWallet = new Keypair();
+        const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
+        const provider = new AnchorProvider(
+            connection,
+            { publicKey: dummyWallet.publicKey } as Wallet,
+            { commitment: "confirmed" }
+        );
+        const program = getHypernovaProgram(provider);
+        console.log("program", program);
         const mintAddress = params.mint_address;
         const { solAmount } = await req.json();
 
@@ -129,15 +138,18 @@ export async function POST(
         }
 
         const presaleAddress = new PublicKey(data.presale_address);
+        //@ts-ignore
         const presaleAccount = await program.account.presaleInfo.fetch(presaleAddress);
+        console.log("presaleAccount", presaleAccount);
         const token_price = presaleAccount.tokenPrice.toNumber();
-        // Calculate token amount
+        console.log("token_price", token_price);
         const tokenAmount = solAmountLamports / token_price;
+        console.log("tokenAmount", tokenAmount);
 
         return NextResponse.json({
             success: true,
             data: {
-                tokenAmount: Number(tokenAmount) / 1e6,
+                tokenAmount,
                 solAmount,
                 tokenPrice: token_price,
                 minPurchase: Number(data.min_purchase),

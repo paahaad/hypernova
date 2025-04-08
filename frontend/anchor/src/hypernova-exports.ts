@@ -23,7 +23,7 @@ export function getHypernovaProgramId() {
     return HYPERNOVA_PROGRAM_ID
   } else {
     // This is the program ID for the Hypernova program on devnet and testnet.
-    return new PublicKey('coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF')
+    return new PublicKey('HeQRZFKyhr1DG7MV3FxrrrBTPqjyVCWSS6KiUhxUyrcb')
   }
 }
 
@@ -33,7 +33,7 @@ export function getHypernovaProgramIdLegacy(cluster: Cluster) {
     case 'devnet':
     case 'testnet':
       // This is the program ID for the Hypernova program on devnet and testnet.
-      return new PublicKey('coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF')
+      return new PublicKey('HeQRZFKyhr1DG7MV3FxrrrBTPqjyVCWSS6KiUhxUyrcb')
     case 'mainnet-beta':
     default:
       return HYPERNOVA_PROGRAM_ID

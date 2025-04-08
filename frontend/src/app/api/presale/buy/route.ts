@@ -1,13 +1,20 @@
-import { getProgramWithDummyWallet, connection } from "@/lib/anchor";
-import { BN } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { getHypernovaProgram } from "@project/anchor";
+import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { NextResponse } from "next/server";
-import { VAULT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase/server";
+import { VAULT } from "@/lib/constants";
 
 export async function POST(req: Request) {
     try {
-        const program = getProgramWithDummyWallet();
+        const dummyWallet = new Keypair();
+        const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
+        const provider = new AnchorProvider(
+            connection,
+            { publicKey: dummyWallet.publicKey } as Wallet,
+            { commitment: "confirmed" }
+        );
+        const program = getHypernovaProgram(provider);
         const { mintAddress, amount, userAddress } = await req.json();
 
 
@@ -40,13 +47,12 @@ export async function POST(req: Request) {
 
         const tx = await program.methods
             .purchase(
-                new BN(data.id), // bump
-                new BN(amount)
+                new BN(data.id),
+                new BN(amount * 1000000000)
             )
             .accounts({
                 user: userPubkey,
                 presaleAccount: presalePDA,
-                // vault: VAULT,
             })
             .transaction();
 
