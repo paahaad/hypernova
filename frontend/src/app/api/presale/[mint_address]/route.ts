@@ -138,7 +138,7 @@ export async function POST(
         }
 
         const presaleAddress = new PublicKey(data.presale_address);
-        //@ts-ignore
+        // @ts-expect-error: this is false error
         const presaleAccount = await program.account.presaleInfo.fetch(presaleAddress);
         console.log("presaleAccount", presaleAccount);
         const token_price = presaleAccount.tokenPrice.toNumber();

@@ -1,22 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
-import { Keypair, Connection, PublicKey } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
 import cron from 'node-cron';
-import { getProgramWithDummyWallet } from '../src/lib/anchor';
+import { getHypernovaProgram } from "@project/anchor";
+import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 
-// Initialize Supabase client
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 );
-
-// Initialize Solana connection
-const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+const dummyWallet = new Keypair();
+const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
+const provider = new AnchorProvider(
+  connection,
+  { publicKey: dummyWallet.publicKey } as Wallet,
+  { commitment: "confirmed" }
+);
+const program = getHypernovaProgram(provider);
 
 async function checkAndFinalizeSales() {
   try {
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
-
+    const recipientWallet = new Keypair();
+    
     // Query presales that have ended but not finalized
     const { data: presales, error } = await supabase
       .from('presales')
@@ -31,11 +38,7 @@ async function checkAndFinalizeSales() {
 
     for (const presale of presales || []) {
       try {
-        // Create a new wallet for receiving funds
-        const recipientWallet = Keypair.generate();
 
-        // Get program instance with admin wallet
-        const program = getProgramWithDummyWallet();
 
         // Create transaction to finalize sale
         const tx = await program.methods
