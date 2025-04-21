@@ -8,6 +8,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
+import axios from 'axios';
 
 interface FormData {
   tokenMintA: string;
@@ -24,7 +25,6 @@ export default function PoolLaunchForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!publicKey) {
       toast.error('Please connect your wallet first');
       return;
@@ -32,36 +32,25 @@ export default function PoolLaunchForm() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/pools', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tokenMintA: formData.tokenMintA,
-          tokenMintB: formData.tokenMintB,
-          userAddress: publicKey.toString(),
-        }),
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/pool`, {
+        tokenMintA: formData.tokenMintA,
+        tokenMintB: formData.tokenMintB,
+        userAddress: publicKey.toString(),
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create pool');
+      if (response.status !== 200) {
+        throw new Error(response.data.error || 'Failed to create pool');
       }
-
-      const tx = data.tx;
+      const tx = response.data.tx;
       if (!tx) {
-        toast.message(data.message);
+        toast.message(response.data.message);
         return;
       }
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
-      
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
 
       toast.success('Pool created successfully!');
-      // Reset form or redirect
     } catch (error: any) {
       console.log('error', error);
       toast.error(error.message || 'Failed to create pool');

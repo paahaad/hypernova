@@ -133,7 +133,7 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
             },
             &signer_seeds,
         ),
-        tokens_to_purchase,
+        tokens_to_purchase * 1000000000,
         ctx.accounts.mint_account.decimals,
     )?;
 
