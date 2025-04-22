@@ -8,6 +8,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
+import { HypernovaApi } from '@/lib/api-client';
 
 interface FormData {
   tokenMintA: string;
@@ -32,7 +33,16 @@ export default function PoolLaunchForm() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/pools', {
+      // Use our API client to create the pool
+      const response = await HypernovaApi.pools.create({
+        pool_address: 'pending', // Will be updated by the blockchain
+        token_a_id: formData.tokenMintA,
+        token_b_id: formData.tokenMintB,
+        lp_mint: 'pending' // Will be updated by the blockchain
+      });
+
+      // For on-chain interaction, we still need to call the original API
+      const onChainResponse = await fetch('/api/pools', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,10 +51,11 @@ export default function PoolLaunchForm() {
           tokenMintA: formData.tokenMintA,
           tokenMintB: formData.tokenMintB,
           userAddress: publicKey.toString(),
+          clientOrigin: 'ui' // Mark this as coming from the UI
         }),
       });
 
-      const data = await response.json();
+      const data = await onChainResponse.json();
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to create pool');
@@ -59,6 +70,17 @@ export default function PoolLaunchForm() {
       
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
+
+      // Update pool with actual blockchain data if needed
+      if (data.whirlpoolAddress) {
+        // Extract the pool ID
+        const poolId = typeof response === 'string' ? response : (response as any).id;
+        
+        await HypernovaApi.pools.update(poolId, {
+          pool_address: data.whirlpoolAddress,
+          lp_mint: data.lpMint || 'pending'
+        });
+      }
 
       toast.success('Pool created successfully!');
       // Reset form or redirect

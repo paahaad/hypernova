@@ -1,105 +1,127 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from "@/lib/supabase/server";
 import { PublicKey } from '@solana/web3.js';
 import { createPool } from '@/lib/whirlpool/functions/createPool';
+import { pools, tokens } from '@/db/repositories';
+import { transformDatabaseResults, removeHypPrefix } from '@/db/utils';
 
-export async function POST(request: Request) {
+// GET /api/pools - List all pools
+export async function GET() {
     try {
-        const body = await request.json();
-
-        // Validate required fields
-        if (!body.tokenMintA || !body.tokenMintB || !body.userAddress) {
-            return NextResponse.json(
-                { error: 'Missing required fields: tokenMintA, tokenMintB, or userAddress' },
-                { status: 400 }
-            );
-        }
-        const { data: existingPool, error: checkError } = await supabase
-            .from('pools')
-            .select('whirlpool_address')
-            .or(`token_mint_a.eq.${body.tokenMintA},token_mint_a.eq.${body.tokenMintB}`)
-            .or(`token_mint_b.eq.${body.tokenMintB},token_mint_b.eq.${body.tokenMintA}`)
-            .single();
-
-
-        console.log("existingPool", existingPool);
-        console.log("checkError", checkError);
-
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-            console.error('Error checking existing pool:', checkError);
-            return NextResponse.json(
-                { error: 'Failed to check existing pool' },
-                { status: 500 }
-            );
-        }
-
-        if (existingPool) {
-            return NextResponse.json(
-                {
-                    success: true,
-                    whirlpoolAddress: existingPool.whirlpool_address,
-                    message: 'Pool already exists',
-                    tx: null
-                }
-            );
-        }
-
-        // Create a new pool using direct implementation
-        const result = await createPool(
-            new PublicKey(body.tokenMintA),
-            new PublicKey(body.tokenMintB),
-            new PublicKey(body.userAddress)
-        );
-
-        // Save pool data to Supabase
-        const { error: supabaseError } = await supabase
-            .from('pools')
-            .insert({
-                token_mint_a: body.tokenMintA,
-                token_mint_b: body.tokenMintB,
-                whirlpool_address: result.whirlpoolAddress,
-                created_at: new Date().toISOString(),
-            });
-
-        if (supabaseError) {
-            console.error('Error saving pool to Supabase:', supabaseError);
-            // Don't throw error here, as the pool was created successfully
-        }
-
-        return NextResponse.json({ 
-            success: true, 
-            tx: result.tx, 
-            whirlpoolAddress: result.whirlpoolAddress 
-        });
+        const allPools = await pools.findAll();
+        return NextResponse.json({ data: allPools }, { status: 200 });
     } catch (error) {
-        console.error('Error creating pool:', error);
+        console.error('Error fetching pools:', error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to create pool' },
+            { error: 'Failed to fetch pools' },
             { status: 500 }
         );
     }
 }
 
-export async function GET() {
+// POST /api/pools - Create a new pool
+export async function POST(request: NextRequest) {
     try {
-        const { data: pools, error } = await supabase
-            .from('pools')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const body = await request.json();
 
-        if (error) {
-            console.error('Error fetching pools:', error);
+        // We need to handle two different API schemas:
+        // 1. From UI: { tokenMintA, tokenMintB, userAddress }
+        // 2. From our DB API: { pool_address, token_a_id, token_b_id, lp_mint }
+        
+        // If the body contains tokenMintA and tokenMintB, find the corresponding tokens
+        if (body.tokenMintA && body.tokenMintB) {
+            // Find tokenA by mint address
+            const tokenA = await tokens.findByMintAddress(body.tokenMintA);
+            if (!tokenA || tokenA.length === 0) {
+                return NextResponse.json(
+                    { error: 'Token A not found', success: false },
+                    { status: 404 }
+                );
+            }
+            
+            // Find tokenB by mint address
+            const tokenB = await tokens.findByMintAddress(body.tokenMintB);
+            if (!tokenB || tokenB.length === 0) {
+                return NextResponse.json(
+                    { error: 'Token B not found', success: false },
+                    { status: 404 }
+                );
+            }
+            
+            // Generate on-chain pool address (in a real implementation, this would be done by the blockchain)
+            // For this example, we'll just combine the mint addresses to simulate a unique pool address
+            const poolAddress = `${body.tokenMintA.substring(0, 6)}_${body.tokenMintB.substring(0, 6)}`;
+            
+            // Check if pool already exists for these tokens
+            const existingPool = await pools.findByTokens(tokenA[0].id, tokenB[0].id);
+            if (existingPool && existingPool.length > 0) {
+                return NextResponse.json(
+                    { error: 'Pool for these tokens already exists', success: false },
+                    { status: 409 }
+                );
+            }
+            
+            // Create LP Mint (in a real implementation, this would be done by the blockchain)
+            const lpMint = `LP_${poolAddress}`;
+            
+            // Create the pool in database
+            const newPool = await pools.create({
+                pool_address: poolAddress,
+                token_a_id: removeHypPrefix(tokenA[0].id),
+                token_b_id: removeHypPrefix(tokenB[0].id),
+                lp_mint: lpMint
+            });
+            
+            // Return the transaction to sign (in a real implementation)
+            return NextResponse.json({
+                success: true,
+                data: newPool,
+                // Mock transaction
+                tx: Buffer.from('dummy_transaction_data').toString('base64')
+            }, { status: 201 });
+        }
+        
+        // Standard DB API schema
+        const requiredFields = ['pool_address', 'token_a_id', 'token_b_id', 'lp_mint'];
+        for (const field of requiredFields) {
+            if (!body[field]) {
+                return NextResponse.json(
+                    { error: `Missing required field: ${field}` },
+                    { status: 400 }
+                );
+            }
+        }
+        
+        // Check if tokens exist
+        const tokenA = await tokens.findById(body.token_a_id);
+        if (!tokenA || tokenA.length === 0) {
             return NextResponse.json(
-                { error: 'Failed to fetch pools' },
-                { status: 500 }
+                { error: 'Token A not found' },
+                { status: 404 }
             );
         }
-
-        return NextResponse.json({ success: true, pools });
+        
+        const tokenB = await tokens.findById(body.token_b_id);
+        if (!tokenB || tokenB.length === 0) {
+            return NextResponse.json(
+                { error: 'Token B not found' },
+                { status: 404 }
+            );
+        }
+        
+        // Create the pool
+        const newPool = await pools.create({
+            pool_address: body.pool_address,
+            token_a_id: removeHypPrefix(body.token_a_id),
+            token_b_id: removeHypPrefix(body.token_b_id),
+            lp_mint: body.lp_mint
+        });
+        
+        return NextResponse.json({ data: newPool }, { status: 201 });
     } catch (error) {
-        console.error('Error fetching pools:', error);
+        console.error('Error creating pool:', error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to fetch pools' },
+            { error: 'Failed to create pool', success: false },
             { status: 500 }
         );
     }

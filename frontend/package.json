@@ -11,7 +11,11 @@
     "anchor-build": "cd anchor && anchor build",
     "anchor-localnet": "cd anchor && anchor localnet",
     "anchor-test": "cd anchor && anchor test",
-    "ci": "npm run build"
+    "ci": "npm run build",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
@@ -116,6 +120,7 @@
     "decimal.js": "^10.5.0",
     "diff": "^6.0.0-beta",
     "diff-match-patch": "^1.0.5",
+    "drizzle-orm": "^0.29.5",
     "echarts-for-react": "^3.0.2",
     "embla-carousel-react": "^8.5.2",
     "emoji-picker-react": "^4.11.1",
@@ -139,6 +144,7 @@
     "papaparse": "^5.4.1",
     "pinata": "^0.1.10",
     "plotly": "^1.0.6",
+    "postgres": "^3.4.5",
     "react": "^18",
     "react-beautiful-dnd": "^13.1.1",
     "react-big-calendar": "^1.13.4",
@@ -195,6 +201,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "drizzle-kit": "^0.20.18",
     "eslint": "^8",
     "eslint-config-next": "14.2.16",
     "jest": "^29.7.0",

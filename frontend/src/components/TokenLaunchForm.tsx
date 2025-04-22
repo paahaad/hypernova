@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { HypernovaApi } from '@/lib/api-client';
 
 interface FormData {
   name: string;
@@ -130,6 +131,16 @@ export default function TokenLaunchForm() {
       // Save the metadata URL
       setFinalUri(metadataUrl);
 
+      // First create token
+      const token = await HypernovaApi.tokens.create({
+        mint_address: publicKey.toString(), // This is temporary, will be updated with the actual mint
+        symbol: formData.ticker,
+        name: formData.name,
+        decimals: 9, // Default for Solana SPL tokens
+        logo_uri: imageUrl
+      });
+
+      // Now create presale using the token
       const response = await fetch('/api/presale', {
         method: 'POST',
         headers: {
@@ -158,6 +169,23 @@ export default function TokenLaunchForm() {
         throw new Error(data.error || 'Failed to create token');
       }
 
+      // Get the token ID from created token response
+      console.log('Created token:', token);
+      
+      // Extract the token ID - assuming token contains the ID as a string or has an id property
+      const tokenId = typeof token === 'string' ? token : (token as any).id;
+      
+      // Create presale in database 
+      await HypernovaApi.presales.create({
+        token_id: tokenId,
+        presale_address: data.presaleAddress || 'pending_address',
+        total_raised: 0,
+        target_amount: formData.presaleAmount,
+        start_time: new Date().toISOString(),
+        end_time: formData.endTime,
+        status: 'active'
+      });
+
       const tx = data.tx;
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
       
@@ -168,6 +196,7 @@ export default function TokenLaunchForm() {
       toast.success('Token created successfully!');
       // Reset form or redirect
     } catch (error: any) {
+      console.error('Error creating token:', error);
       toast.error(error.message || 'Failed to create token');
     } finally {
       setIsLoading(false);
