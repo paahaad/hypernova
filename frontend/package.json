@@ -37,7 +37,10 @@
     "@monaco-editor/react": "^4.6.0",
     "@nextui-org/react": "^2.4.6",
     "@orca-so/common-sdk": "^0.6.11",
+    "@orca-so/tx-sender": "^1.0.0",
     "@orca-so/whirlpools": "^1.1.0",
+    "@orca-so/whirlpools-client": "^1.0.5",
+    "@orca-so/whirlpools-core": "^1.0.4",
     "@orca-so/whirlpools-sdk": "^0.13.17",
     "@privy-io/react-auth": "^2.6.2",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -74,6 +77,10 @@
     "@react-three/fiber": "^8.17.6",
     "@refinedev/react-table": "^5.6.13",
     "@shopify/polaris": "^13.9.0",
+    "@solana-program/system": "^0.7.0",
+    "@solana-program/token": "^0.5.1",
+    "@solana-program/token-2022": "^0.4.0",
+    "@solana/kit": "^2.1.0",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.24",
     "@solana/wallet-adapter-react": "^0.15.36",
@@ -109,6 +116,8 @@
     "anchor-bankrun": "^0.5.0",
     "antd": "^5.20.5",
     "aos": "^2.3.4",
+    "assert": "^2.1.0",
+    "axios": "^1.8.4",
     "bs58": "^6.0.0",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
@@ -120,7 +129,7 @@
     "decimal.js": "^10.5.0",
     "diff": "^6.0.0-beta",
     "diff-match-patch": "^1.0.5",
-    "drizzle-orm": "^0.29.5",
+    "dotenv": "^16.4.7",
     "echarts-for-react": "^3.0.2",
     "embla-carousel-react": "^8.5.2",
     "emoji-picker-react": "^4.11.1",
@@ -208,6 +217,6 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.2.6",
-    "typescript": "^5"
+    "typescript": "^5.8.2"
   }
 }

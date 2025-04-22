@@ -9,8 +9,16 @@ import addLP from './functions/pools/addLP';
 import removeLP from './functions/pools/removeLP';
 import { ctx, config, configExtension } from './client';
 import { envPORT } from './env';
+import cors from 'cors';
 
 const app: Application = express();
+app.use(cors({
+  origin: "*", // Specify your frontend URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false
+}));
+
 app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 

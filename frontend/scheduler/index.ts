@@ -38,8 +38,6 @@ async function checkAndFinalizeSales() {
 
     for (const presale of presales || []) {
       try {
-
-
         // Create transaction to finalize sale
         const tx = await program.methods
           .finalizeSale()
@@ -50,7 +48,6 @@ async function checkAndFinalizeSales() {
           })
           .rpc();
 
-        // Update presale status in Supabase
         await supabase
           .from('presales')
           .update({

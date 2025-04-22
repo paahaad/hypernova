@@ -11,6 +11,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { wallet } from '@/lib/orca';
 import { Switch } from "@/components/ui/switch";
 import { Check, Copy } from "lucide-react";
+import axios from 'axios';
+import { Transaction } from '@solana/web3.js';
+import { connection } from '@/lib/anchor';
+import { toast } from 'sonner';
 
 interface PoolDetails {
   whirlpool_address: string;
@@ -41,8 +45,9 @@ export default function PoolDetailsPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([6.490425, 9.110986]);
   const currentPrice = 7.6899;
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
+  const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
 
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected, sendTransaction } = useWallet();
   
   useEffect(() => {
     const fetchPoolDetails = async () => {
@@ -63,16 +68,58 @@ export default function PoolDetailsPage() {
   }, [params.address]);
 
   const handleAddLiquidity = async () => {
-    if (!pool || !connected || !publicKey) {
+    if (!pool || !connected || !publicKey || !sendTransaction) {
       console.error('Pool not found or wallet not connected');
       return;
     }
 
+    setIsAddingLiquidity(true);
+
     try {
-      // This will be handled by the Add Position button click handler
-      console.log('Add Position clicked');
-    } catch (error) {
+      const payload = {
+        whirlpoolAddress: pool.whirlpool_address,
+        userAddress: publicKey.toString(),
+        tokenAmountA: parseFloat(tokenAAmount),
+        tokenAmountB: parseFloat(tokenBAmount),
+        priceLower: parseFloat(minPrice),
+        priceUpper: parseFloat(maxPrice)
+      };
+
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/liquidity/add`, payload);
+
+      if (response.status !== 200) {
+        throw new Error(response.data.error || 'Failed to add liquidity');
+      }
+
+      const { tx, positionMint } = response.data;
+      
+      if (!tx) {
+        toast.error('No transaction received from server');
+        return;
+      }
+
+      // Convert base64 transaction to Transaction object
+      const txData = Transaction.from(Buffer.from(tx, 'base64'));
+      
+      const signature = await sendTransaction(txData, connection);
+      
+      console.log('Transaction signature:', signature);
+      console.log('Position mint:', positionMint);
+
+      // Reset form
+      setTokenAAmount('');
+      setTokenBAmount('');
+      
+      toast.success('Successfully added liquidity!');
+      
+      // Optionally refresh pool data or navigate to the positions tab
+      setActiveTab('positions');
+
+    } catch (error: any) {
       console.error('Error adding liquidity:', error);
+      toast.error(error.message || 'Failed to add liquidity');
+    } finally {
+      setIsAddingLiquidity(false);
     }
   };
 
@@ -606,9 +653,9 @@ export default function PoolDetailsPage() {
                     <Button
                       onClick={handleAddLiquidity}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
-                      disabled={!connected}
+                      disabled={!connected || isAddingLiquidity}
                     >
-                      Add Liquidity
+                      {isAddingLiquidity ? 'Adding Liquidity...' : 'Add Liquidity'}
                     </Button>
                   </div>
                 )}
