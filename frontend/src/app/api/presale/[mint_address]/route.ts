@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/server";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import { getHypernovaProgram } from "@project/anchor";
-
+import { presales } from "@/db/repositories";
 
 export async function GET(
     req: Request,
@@ -19,26 +18,16 @@ export async function GET(
             );
         }
 
-        const { data, error } = await supabase
-            .from('presales')
-            .select('name, symbol, uri, total_supply, description, token_price, min_purchase, max_purchase, presale_percentage, end_time, user_address, mint_address, presale_address')
-            .eq('mint_address', mintAddress)
-            .single();
+        const presaleData = await presales.findByMintAddress(mintAddress);
 
-        if (error) {
-            console.error("Error fetching from Supabase:", error);
-            return NextResponse.json(
-                { success: false, error: error.message || "Failed to fetch token data" },
-                { status: 500 }
-            );
-        }
-
-        if (!data) {
+        if (!presaleData || presaleData.length === 0) {
             return NextResponse.json(
                 { success: false, error: "Token not found" },
                 { status: 404 }
             );
         }
+
+        const data = presaleData[0];
 
         // Convert any BN values to regular numbers
         const processedData = {
@@ -48,7 +37,7 @@ export async function GET(
             token_price: data.token_price ? Number(data.token_price) : null,
             min_purchase: data.min_purchase ? Number(data.min_purchase) : null,
             max_purchase: data.max_purchase ? Number(data.max_purchase) : null,
-            end_time: data.end_time ? Number(data.end_time) : null,
+            end_time: data.end_time ? new Date(data.end_time).getTime() / 1000 : null, // Convert Date to UNIX timestamp
         };
 
         return NextResponse.json(processedData);
@@ -95,32 +84,21 @@ export async function POST(
         // Convert SOL amount to lamports (1 SOL = 1e9 lamports)
         const solAmountLamports = solAmount * 1e9;
 
-        const { data, error } = await supabase
-            .from('presales')
-            .select('token_price, min_purchase, max_purchase, presale_address')
-            .eq('mint_address', mintAddress)
-            .single();
+        const presaleData = await presales.findByMintAddress(mintAddress);
 
-        console.table(data);
-
-        if (error) {
-            console.error("Error fetching from Supabase:", error);
-            return NextResponse.json(
-                { success: false, error: error.message || "Failed to fetch token data" },
-                { status: 500 }
-            );
-        }
-
-        if (!data) {
+        if (!presaleData || presaleData.length === 0) {
             return NextResponse.json(
                 { success: false, error: "Token not found" },
                 { status: 404 }
             );
         }
 
+        const data = presaleData[0];
+        console.table(data);
+
         // Convert min and max purchase to lamports for comparison
-        const minPurchaseLamports = data.min_purchase * 1e9;
-        const maxPurchaseLamports = data.max_purchase * 1e9;
+        const minPurchaseLamports = Number(data.min_purchase) * 1e9;
+        const maxPurchaseLamports = Number(data.max_purchase) * 1e9;
 
         // Validate purchase amount
         if (solAmountLamports < minPurchaseLamports) {

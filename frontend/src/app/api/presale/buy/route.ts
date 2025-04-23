@@ -2,8 +2,8 @@ import { getHypernovaProgram } from "@project/anchor";
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/server";
 import { VAULT } from "@/lib/constants";
+import { presales } from "@/db/repositories";
 
 export async function POST(req: Request) {
     try {
@@ -29,15 +29,22 @@ export async function POST(req: Request) {
         const mintPubkey = new PublicKey(mintAddress);
         const userPubkey = new PublicKey(userAddress);
 
-        const { data, error } = await supabase
-            .from('presales')
-            .select('id, name, symbol, uri, total_supply, description, token_price, min_purchase, max_purchase, presale_percentage, end_time, user_address, mint_address, presale_address')
-            .eq('mint_address', mintAddress)
-            .single();
+        const presaleData = await presales.findByMintAddress(mintAddress);
 
-        if (error) {
-            console.error("Error fetching presale data:", error);
-            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (!presaleData || presaleData.length === 0) {
+            return NextResponse.json(
+                { success: false, error: "Presale not found" },
+                { status: 404 }
+            );
+        }
+
+        const data = presaleData[0];
+        
+        if (!data.id) {
+            return NextResponse.json(
+                { success: false, error: "Invalid presale data: missing ID" },
+                { status: 500 }
+            );
         }
 
         const [presalePDA] = PublicKey.findProgramAddressSync(
@@ -47,7 +54,7 @@ export async function POST(req: Request) {
 
         const tx = await program.methods
             .purchase(
-                new BN(data.id),
+                new BN(Number(data.id)),
                 new BN(amount * 1000000000)
             )
             .accounts({

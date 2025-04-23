@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, numeric, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, numeric, integer, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // Custom UUID generation function that prefixes with 'hyp_'
@@ -20,12 +20,27 @@ export const tb_tokens = pgTable('tb_tokens', {
 export const tb_presales = pgTable('tb_presales', {
   id: uuid('id').primaryKey().default(hypUuid()),
   token_id: uuid('token_id').references(() => tb_tokens.id),
+  name: text('name'),
+  symbol: text('symbol'),
+  uri: text('uri'),
+  description: text('description'),
+  total_supply: numeric('total_supply'),
+  token_price: numeric('token_price'),
+  min_purchase: numeric('min_purchase'),
+  max_purchase: numeric('max_purchase'),
+  mint_address: text('mint_address').unique(),
   presale_address: text('presale_address').unique().notNull(),
+  presale_percentage: numeric('presale_percentage'),
   total_raised: numeric('total_raised').notNull(),
   target_amount: numeric('target_amount').notNull(),
   start_time: timestamp('start_time').notNull(),
   end_time: timestamp('end_time').notNull(),
   status: text('status').notNull().default('active'), // 'active', 'completed', 'cancelled'
+  user_address: text('user_address'),
+  finalized: boolean('finalized').default(false),
+  recipient_wallet: text('recipient_wallet'),
+  finalized_at: timestamp('finalized_at'),
+  finalize_tx: text('finalize_tx'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()
 });

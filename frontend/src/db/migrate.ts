@@ -12,10 +12,10 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // Get the connection string from environment variable
-const connectionString = process.env.SUPABASE_POSTGRES_URL!;
+const connectionString = process.env.SUPABASE_DATABASE_URL!;
 
 if (!connectionString) {
-  console.error('Error: SUPABASE_POSTGRES_URL environment variable is not set');
+  console.error('Error: SUPABASE_DATABASE_URL environment variable is not set');
   process.exit(1);
 }
 

@@ -4,6 +4,21 @@
 // Check if we are in the server or client context
 const isServer = typeof window === 'undefined';
 
+// Environment variables for the application
+// This file simplifies accessing environment variables and provides consistent naming
+
+// Auth variables
+export const envNEXT_PUBLIC_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
+export const envNEXT_PUBLIC_USE_TEST_TOKENS = process.env.NEXT_PUBLIC_USE_TEST_TOKENS === 'true';
+export const envNEXT_PUBLIC_NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'devnet';
+
+// Blockchain variables
+export const envNEXT_PUBLIC_HYPERNOVA_PROGRAM_ID = process.env.NEXT_PUBLIC_HYPERNOVA_PROGRAM_ID || '';
+export const envWALLET_MONITOR_INTERVAL = process.env.WALLET_MONITOR_INTERVAL ? parseInt(process.env.WALLET_MONITOR_INTERVAL) : 1000;
+
+// Database variables
+export const envSUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL || '';
+
 // Environment variables
 export const envNEXT_PUBLIC_USE_MAINNET = process.env.NEXT_PUBLIC_USE_MAINNET === 'true';
 export const envNEXT_PUBLIC_PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || '';
@@ -11,11 +26,6 @@ export const envNEXT_PUBLIC_PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID 
 export const envMAINNET_RPC_URL = 'https://rpc.mainnet-alpha.sonic.game';
 export const envTESTNET_RPC_URL = 'https://api.testnet.sonic.game';
 export const envRPC_URL = envNEXT_PUBLIC_USE_MAINNET ? envMAINNET_RPC_URL : envTESTNET_RPC_URL;
-export const envNEXT_PUBLIC_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || envRPC_URL;
-export const envSUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL || '';
-export const envNEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-export const envNEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-export const envSUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 export const envPINATA_API_KEY = process.env.PINATA_API_KEY || '';
 export const envPINATA_API_SECRET = process.env.PINATA_API_SECRET || '';
 export const envPINATA_JWT = process.env.PINATA_JWT || '';

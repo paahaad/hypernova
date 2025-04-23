@@ -1,15 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import * as anchor from '@coral-xyz/anchor';
 import cron from 'node-cron';
 import { getHypernovaProgram } from "@project/anchor";
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
+import { presales } from "@/db/repositories";
 
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
 const dummyWallet = new Keypair();
 const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
 const provider = new AnchorProvider(
@@ -25,18 +20,14 @@ async function checkAndFinalizeSales() {
     const recipientWallet = new Keypair();
     
     // Query presales that have ended but not finalized
-    const { data: presales, error } = await supabase
-      .from('presales')
-      .select('*')
-      .lt('end_time', now)
-      .eq('finalized', false);
+    const endedPresales = await presales.findEndedNotFinalized(now);
 
-    if (error) {
-      console.error('Error querying presales:', error);
+    if (!endedPresales || endedPresales.length === 0) {
+      console.log('No ended presales to finalize');
       return;
     }
 
-    for (const presale of presales || []) {
+    for (const presale of endedPresales) {
       try {
         // Create transaction to finalize sale
         const tx = await program.methods
@@ -48,15 +39,13 @@ async function checkAndFinalizeSales() {
           })
           .rpc();
 
-        await supabase
-          .from('presales')
-          .update({
-            finalized: true,
-            recipient_wallet: recipientWallet.publicKey.toString(),
-            finalized_at: now,
-            finalize_tx: tx
-          })
-          .eq('presale_address', presale.presale_address);
+        // Update the presale record to mark it as finalized
+        await presales.updateByPresaleAddress(presale.presale_address, {
+          finalized: true,
+          recipient_wallet: recipientWallet.publicKey.toString(),
+          finalized_at: new Date(now * 1000),
+          finalize_tx: tx
+        });
 
         // Save the recipient wallet's private key securely
         // IMPORTANT: In production, use proper key management system

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, lt } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
 import { tb_presales } from '../schema';
 import { transformDatabaseResults, removeHypPrefix } from '../utils';
@@ -34,6 +34,16 @@ export class PresalesRepository extends BaseRepository {
     return transformDatabaseResults(presales);
   }
 
+  async findByMintAddress(mintAddress: string) {
+    const presales = await this.db
+      .select()
+      .from(tb_presales)
+      .where(eq(tb_presales.mint_address, mintAddress))
+      .limit(1);
+    
+    return transformDatabaseResults(presales);
+  }
+
   async findByPresaleAddress(presaleAddress: string) {
     const presales = await this.db
       .select()
@@ -44,20 +54,52 @@ export class PresalesRepository extends BaseRepository {
     return transformDatabaseResults(presales);
   }
 
+  async findEndedNotFinalized(currentTime: number) {
+    const presales = await this.db
+      .select()
+      .from(tb_presales)
+      .where(
+        and(
+          lt(tb_presales.end_time, new Date(currentTime * 1000)), // Convert UNIX timestamp to Date
+          eq(tb_presales.finalized, false)
+        )
+      );
+    
+    return transformDatabaseResults(presales);
+  }
+
   async create(data: {
-    token_id: string;
-    presale_address: string;
-    total_raised: number;
-    target_amount: number;
-    start_time: Date;
-    end_time: Date;
+    name?: string;
+    symbol?: string;
+    uri?: string;
+    description?: string;
+    total_supply?: number;
+    token_price?: number;
+    min_purchase?: number;
+    max_purchase?: number;
+    mint_address?: string;
+    presale_address?: string;
+    presale_percentage?: number;
+    end_time?: number;
+    user_address?: string;
+    finalized?: boolean;
+    id?: number;
+    token_id?: string;
+    total_raised?: number;
+    target_amount?: number;
+    start_time?: Date;
     status?: string;
   }) {
-    // Make sure token_id doesn't have the hyp_ prefix
-    const cleanedData = {
-      ...data,
-      token_id: removeHypPrefix(data.token_id)
-    };
+    // Make sure token_id doesn't have the hyp_ prefix if it exists
+    const cleanedData = { ...data };
+    if (cleanedData.token_id) {
+      cleanedData.token_id = removeHypPrefix(cleanedData.token_id);
+    }
+    
+    // Convert end_time from timestamp to Date if provided
+    if (cleanedData.end_time) {
+      cleanedData.end_time = new Date(cleanedData.end_time * 1000);
+    }
     
     const newPresales = await this.db.insert(tb_presales).values(cleanedData).returning();
     return transformDatabaseResults(newPresales);
@@ -77,6 +119,21 @@ export class PresalesRepository extends BaseRepository {
       .update(tb_presales)
       .set({ ...cleanedData, updated_at: new Date() })
       .where(eq(tb_presales.id, dbId))
+      .returning();
+    
+    return transformDatabaseResults(updatedPresales);
+  }
+
+  async updateByPresaleAddress(presaleAddress: string, data: Partial<typeof tb_presales.$inferInsert>) {
+    const cleanedData = { ...data };
+    if (cleanedData.token_id) {
+      cleanedData.token_id = removeHypPrefix(cleanedData.token_id);
+    }
+    
+    const updatedPresales = await this.db
+      .update(tb_presales)
+      .set({ ...cleanedData, updated_at: new Date() })
+      .where(eq(tb_presales.presale_address, presaleAddress))
       .returning();
     
     return transformDatabaseResults(updatedPresales);

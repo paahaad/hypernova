@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
 import { tb_pools } from '../schema';
 import { transformDatabaseResults, removeHypPrefix } from '../utils';
@@ -40,8 +40,10 @@ export class PoolsRepository extends BaseRepository {
     const pools = await this.db
       .select()
       .from(tb_pools)
-      .where(eq(tb_pools.token_a_id, dbTokenAId))
-      .where(eq(tb_pools.token_b_id, dbTokenBId))
+      .where(and(
+        eq(tb_pools.token_a_id, dbTokenAId),
+        eq(tb_pools.token_b_id, dbTokenBId)
+      ))
       .limit(1);
     
     return transformDatabaseResults(pools);

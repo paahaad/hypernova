@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { supabase } from "@/lib/supabase/server";
 import { PublicKey } from '@solana/web3.js';
 import { addLiquidity } from '@/lib/whirlpool/functions/addLiquidity';
+import { pools } from '@/db/repositories';
 
 export async function POST(request: Request) {
     try {
@@ -16,13 +16,9 @@ export async function POST(request: Request) {
         }
 
         // Verify pool exists
-        const { data: pool, error: poolError } = await supabase
-            .from('pools')
-            .select('*')
-            .eq('whirlpool_address', body.poolAddress)
-            .single();
+        const poolData = await pools.findByPoolAddress(body.poolAddress);
 
-        if (poolError || !pool) {
+        if (!poolData || poolData.length === 0) {
             return NextResponse.json(
                 { error: 'Pool not found' },
                 { status: 404 }

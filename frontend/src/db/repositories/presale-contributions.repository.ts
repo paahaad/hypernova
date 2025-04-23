@@ -1,58 +1,89 @@
 import { eq, and } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
 import { tb_presale_contributions } from '../schema';
+import { transformDatabaseResults, removeHypPrefix } from '../utils';
 
 export class PresaleContributionsRepository extends BaseRepository {
   async findAll() {
-    return await this.db.select().from(tb_presale_contributions);
+    const contributions = await this.db.select().from(tb_presale_contributions);
+    return transformDatabaseResults(contributions);
   }
 
   async findById(id: string) {
-    return await this.db
+    // Remove 'hyp_' prefix if present before querying the database
+    const dbId = removeHypPrefix(id);
+    
+    const contributions = await this.db
       .select()
       .from(tb_presale_contributions)
-      .where(eq(tb_presale_contributions.id, id))
+      .where(eq(tb_presale_contributions.id, dbId))
       .limit(1);
+    
+    return transformDatabaseResults(contributions);
   }
 
   async findByPresaleId(presaleId: string) {
-    return await this.db
+    // Remove 'hyp_' prefix if present before querying the database
+    const dbPresaleId = removeHypPrefix(presaleId);
+    
+    const contributions = await this.db
       .select()
       .from(tb_presale_contributions)
-      .where(eq(tb_presale_contributions.presale_id, presaleId));
+      .where(eq(tb_presale_contributions.presale_id, dbPresaleId));
+    
+    return transformDatabaseResults(contributions);
   }
 
   async findByUserWallet(userWallet: string) {
-    return await this.db
+    const contributions = await this.db
       .select()
       .from(tb_presale_contributions)
       .where(eq(tb_presale_contributions.user_wallet, userWallet));
+    
+    return transformDatabaseResults(contributions);
   }
 
   async findByPresaleAndUser(presaleId: string, userWallet: string) {
-    return await this.db
+    // Remove 'hyp_' prefix if present before querying the database
+    const dbPresaleId = removeHypPrefix(presaleId);
+    
+    const contributions = await this.db
       .select()
       .from(tb_presale_contributions)
       .where(
         and(
-          eq(tb_presale_contributions.presale_id, presaleId),
+          eq(tb_presale_contributions.presale_id, dbPresaleId),
           eq(tb_presale_contributions.user_wallet, userWallet)
         )
       );
+    
+    return transformDatabaseResults(contributions);
   }
 
   async create(data: {
     presale_id: string;
     user_wallet: string;
-    amount: number;
+    amount: string;
   }) {
-    return await this.db.insert(tb_presale_contributions).values(data).returning();
+    // Clean any IDs in the data
+    const cleanedData = {
+      ...data,
+      presale_id: removeHypPrefix(data.presale_id),
+    };
+    
+    const newContributions = await this.db.insert(tb_presale_contributions).values(cleanedData).returning();
+    return transformDatabaseResults(newContributions);
   }
 
   async delete(id: string) {
-    return await this.db
+    // Remove 'hyp_' prefix if present before querying the database
+    const dbId = removeHypPrefix(id);
+    
+    const deletedContributions = await this.db
       .delete(tb_presale_contributions)
-      .where(eq(tb_presale_contributions.id, id))
+      .where(eq(tb_presale_contributions.id, dbId))
       .returning();
+    
+    return transformDatabaseResults(deletedContributions);
   }
 } 
