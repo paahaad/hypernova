@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import PoolLaunchForm from "@/components/PoolLaunchForm";
+import PoolLaunchForm from "@/components/forms/PoolLaunchForm";
 import {
   DropdownMenu,
   DropdownMenuContent,
