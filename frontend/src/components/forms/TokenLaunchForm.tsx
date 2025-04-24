@@ -221,6 +221,366 @@ function CylinderSlider({ values, currentValue, onChange, label, unit = '', colo
   );
 }
 
+// DateVialSelector component for date selection with the same aesthetic as CylinderSlider
+interface DateVialSelectorProps {
+  selectedDate: Date;
+  onChange: (date: Date) => void;
+  minDate?: Date;
+  maxDate?: Date;
+}
+
+// ThemeCalendar - a smaller calendar component with drop-up behavior
+function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProps) {
+  const [currentHours, setCurrentHours] = useState(selectedDate.getHours());
+  const [currentMinutes, setCurrentMinutes] = useState(selectedDate.getMinutes());
+  const [isOpen, setIsOpen] = useState(false);
+  // Make sure viewDate starts with today
+  const [viewDate, setViewDate] = useState(new Date());
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const todayRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll to today when calendar opens
+  useEffect(() => {
+    if (isOpen && scrollRef.current && todayRef.current) {
+      // Use a small timeout to ensure the calendar is fully rendered
+      setTimeout(() => {
+        if (todayRef.current) {
+          todayRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest',
+            inline: 'start'
+          });
+        }
+      }, 100);
+    }
+  }, [isOpen]);
+  
+  // Close calendar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+  
+  // Get month name
+  const getMonthName = (date: Date) => {
+    return date.toLocaleString('default', { month: 'long' });
+  };
+  
+  // Generate dates for horizontal calendar
+  const getDatesArray = () => {
+    const dates = [];
+    const startDate = new Date();
+    
+    // Generate 20 days starting from today (0 days before and 20 days after today)
+    for (let i = 0; i < 20; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      dates.push(date);
+    }
+    
+    return dates;
+  };
+  
+  // Format date for display
+  const formatDay = (date: Date) => {
+    const day = date.getDate();
+    const suffix = getDaySuffix(day);
+    return `${day}${suffix}`;
+  };
+  
+  // Get day suffix (st, nd, rd, th)
+  const getDaySuffix = (day: number) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  
+  // Get day name abbreviation
+  const getDayName = (date: Date) => {
+    return date.toLocaleString('default', { weekday: 'short' });
+  };
+  
+  // Navigate to previous month
+  const handlePrevMonth = () => {
+    const newDate = new Date(viewDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setViewDate(newDate);
+  };
+  
+  // Navigate to next month
+  const handleNextMonth = () => {
+    const newDate = new Date(viewDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setViewDate(newDate);
+  };
+  
+  // Handle date selection
+  const handleDateClick = (date: Date) => {
+    const newDate = new Date(date);
+    newDate.setHours(currentHours);
+    newDate.setMinutes(currentMinutes);
+    onChange(newDate);
+  };
+  
+  // Handle time change
+  const handleTimeChange = (type: 'hours' | 'minutes', value: number) => {
+    if (type === 'hours') {
+      setCurrentHours(value);
+      const newDate = new Date(selectedDate);
+      newDate.setHours(value);
+      onChange(newDate);
+    } else {
+      setCurrentMinutes(value);
+      const newDate = new Date(selectedDate);
+      newDate.setMinutes(value);
+      onChange(newDate);
+    }
+  };
+  
+  // Check if date is in the past (only disable dates before today)
+  const isDateDisabled = (date: Date) => {
+    if (!minDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to beginning of day for fair comparison
+    
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0); // Set to beginning of day
+    
+    return compareDate < today;
+  };
+  
+  // Check if date is selected
+  const isDateSelected = (date: Date) => {
+    return date.getDate() === selectedDate.getDate() && 
+           date.getMonth() === selectedDate.getMonth() && 
+           date.getFullYear() === selectedDate.getFullYear();
+  };
+  
+  // Check if date is today
+  const isDateToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() && 
+           date.getMonth() === today.getMonth() && 
+           date.getFullYear() === today.getFullYear();
+  };
+  
+  // Format time value (add leading zero)
+  const formatTimeValue = (value: number) => {
+    return value.toString().padStart(2, '0');
+  };
+  
+  // Format time in AM/PM for preview
+  const formatAmPm = (hours: number, minutes: number) => {
+    const hour12 = hours % 12 || 12; // Convert 0 to 12
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    return `${hour12}:${formatTimeValue(minutes)} ${ampm}`;
+  };
+  
+  // Get dates for horizontal calendar
+  const dates = getDatesArray();
+  
+  return (
+    <div className="relative w-full">
+      {/* Date display that acts as trigger */}
+      <div 
+        className="bg-gray-800/50 border border-gray-700 rounded-md p-2 cursor-pointer flex items-center justify-between"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="text-white font-medium">
+          {selectedDate.toLocaleString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
+        <div className="text-gray-400">
+          {isOpen ? '▲' : '▼'}
+        </div>
+      </div>
+      
+      {/* Backdrop overlay with blur when calendar is open */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+          style={{ backdropFilter: 'blur(4px)' }}
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      
+      {/* Calendar dropdown */}
+      {isOpen && (
+        <div 
+          ref={calendarRef}
+          className="absolute bottom-full left-0 right-0 mb-2 z-50 transform-gpu transition-all duration-200 ease-out origin-bottom"
+          style={{ 
+            animation: 'slideUp 0.2s ease-out forwards',
+          }}
+        >
+          <div className="w-full bg-gray-800/95 border border-gray-700 rounded-lg p-3 backdrop-blur-sm shadow-lg" 
+               style={{ 
+                 background: 'linear-gradient(to bottom right, rgba(30,30,40,0.95), rgba(15,15,25,0.98))',
+                 boxShadow: '0 8px 25px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.07)'
+               }}>
+            
+            {/* Time inputs */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-white text-sm font-medium">Set Time:</div>
+                <div className="text-purple-300 text-xs font-medium">
+                  {formatAmPm(currentHours, currentMinutes)}
+                </div>
+              </div>
+              <div className="flex items-center justify-center bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  value={currentHours}
+                  onChange={(e) => {
+                    let value = parseInt(e.target.value) || 0;
+                    if (value > 24) value = 24;
+                    handleTimeChange('hours', value);
+                  }}
+                  className="w-16 h-10 bg-gray-900/70 border border-gray-700 rounded text-white text-center text-lg font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'textfield'
+                  }}
+                />
+                <span className="mx-3 text-purple-400 font-bold text-2xl">:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={currentMinutes}
+                  onChange={(e) => {
+                    let value = parseInt(e.target.value) || 0;
+                    if (value > 60) value = 60;
+                    handleTimeChange('minutes', value);
+                  }}
+                  className="w-16 h-10 bg-gray-900/70 border border-gray-700 rounded text-white text-center text-lg font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'textfield'
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Month navigation */}
+            <div className="flex justify-between items-center mb-3">
+              <button 
+                onClick={handlePrevMonth}
+                className="flex items-center px-2 py-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors text-sm"
+              >
+                ← Prev
+              </button>
+              <h3 className="text-white text-sm font-medium">
+                {getMonthName(viewDate)} {viewDate.getFullYear()}
+              </h3>
+              <button 
+                onClick={handleNextMonth}
+                className="flex items-center px-2 py-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors text-sm"
+              >
+                Next →
+              </button>
+            </div>
+            
+            {/* Today indicator above calendar */}
+            <div className="mb-2 text-xs text-center text-purple-400 font-medium">
+              <span className="inline-block px-1.5 py-0.5 bg-purple-500/20 rounded-full">
+                ● Today starts the calendar
+              </span>
+            </div>
+            
+            {/* Horizontal scrollable calendar */}
+            <div 
+              ref={scrollRef}
+              className="flex overflow-x-auto pb-2 scrollbar-hidden"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              {dates.map((date, index) => {
+                const isDisabled = isDateDisabled(date);
+                const isSelected = isDateSelected(date);
+                const isToday = isDateToday(date);
+                const isCurrentMonth = date.getMonth() === viewDate.getMonth();
+                
+                return (
+                  <div 
+                    key={index}
+                    className="flex-shrink-0"
+                    ref={isToday ? todayRef : null}
+                  >
+                    <button
+                      onClick={() => !isDisabled && handleDateClick(date)}
+                      disabled={isDisabled}
+                      className={`
+                        w-14 h-16 mx-1 flex flex-col items-center justify-center rounded-lg
+                        transition-all duration-200 border
+                        ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-purple-600/40'}
+                        ${isSelected 
+                          ? 'bg-purple-500/80 text-white font-medium border-purple-400' 
+                          : isCurrentMonth 
+                            ? 'text-gray-300 hover:text-white border-gray-700/50' 
+                            : 'text-gray-500 border-transparent'}
+                        ${isToday && !isSelected ? 'border-purple-500/50 bg-purple-500/20' : ''}
+                      `}
+                      aria-label={isToday ? "Today" : undefined}
+                    >
+                      <div className="text-xs font-medium mb-1">
+                        {getDayName(date)}
+                      </div>
+                      <div className={`text-base ${isSelected || isToday ? 'font-bold' : ''}`}>
+                        {formatDay(date)}
+                      </div>
+                      {isToday && (
+                        <div className="mt-1 w-1 h-1 rounded-full bg-purple-400"></div>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Done button - Styled to match theme */}
+            <button
+              className="mt-3 w-full py-1.5 bg-gradient-to-r from-purple-600/70 to-purple-500/70 hover:from-purple-600/90 hover:to-purple-500/90 text-white text-sm rounded transition-colors shadow-md font-medium"
+              style={{ boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)' }}
+              onClick={() => setIsOpen(false)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DateVialSelector({ selectedDate, onChange, minDate, maxDate }: DateVialSelectorProps) {
+  // This component is no longer needed but keeping it to avoid errors
+  return <div></div>;
+}
+
 interface FormData {
   name: string;
   ticker: string;
@@ -243,6 +603,40 @@ const GlobalStyles = () => {
         0% { transform: translateY(0) scale(1); opacity: 0.7; }
         100% { transform: translateY(-120px) scale(1.5); opacity: 0; }
       }
+      
+      @keyframes slideUp {
+        0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      
+      /* Hide scrollbar but keep functionality */
+      .scrollbar-hidden {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      
+      .scrollbar-hidden::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
+      
+      /* Hide number input spinners */
+      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+      }
+      
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+      
+      .perspective-500 {
+        perspective: 500px;
+      }
+      
+      .shadow-glow {
+        box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+      }
     `}</style>
   );
 };
@@ -253,6 +647,7 @@ export default function TokenLaunchForm() {
   const [finalUri, setFinalUri] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [formData, setFormData] = useState<FormData>({
     name: '',
     ticker: '',
@@ -266,6 +661,21 @@ export default function TokenLaunchForm() {
     presalePercentage: 50,
     endTime: '',
   });
+
+  // Update form data when selected date changes - But only update if date is defined
+  useEffect(() => {
+    if (selectedDate) {
+      // Format the date to YYYY-MM-DDThh:mm
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const hours = String(selectedDate.getHours()).padStart(2, '0');
+      const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+      
+      const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+      setFormData(prev => ({ ...prev, endTime: formattedDate }));
+    }
+  }, [selectedDate]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -367,6 +777,7 @@ export default function TokenLaunchForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Do validation here, not during date selection
     if (!connected || !publicKey) {
       toast.error('Please connect your wallet first');
       return;
@@ -374,6 +785,11 @@ export default function TokenLaunchForm() {
 
     if (!formData.image) {
       toast.error('Please upload an image');
+      return;
+    }
+    
+    if (!formData.endTime) {
+      toast.error('Please select an end time');
       return;
     }
 
@@ -619,11 +1035,16 @@ export default function TokenLaunchForm() {
 
             <div>
               <label className="block text-sm text-gray-300 mb-2">End Time</label>
+              <ThemeCalendar
+                selectedDate={selectedDate}
+                onChange={setSelectedDate}
+                minDate={new Date()} // Minimum date is today
+              />
+              {/* Keep hidden input for form submission */}
               <Input
-                type="datetime-local"
+                type="hidden"
                 value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className="w-full bg-gray-800/50 border-gray-700"
+                name="endTime"
                 required
               />
             </div>
