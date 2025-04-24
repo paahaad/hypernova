@@ -161,16 +161,226 @@ export default function PoolsPage() {
               {/* Create Pool Section */}
               <section className="flex flex-col items-center gap-4 w-full max-w-6xl mb-12">
                 <Button 
-                  variant="default" 
+                  variant="outline" 
                   size="lg"
                   onClick={() => setShowCreatePoolForm(true)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl py-6 px-8 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+                  className="cyber-glitch-btn text-white py-4 px-8 transition-all duration-200"
                 >
                   Create Pool
                 </Button>
                 <p className="text-gray-300 text-sm">
                   Create a new liquidity pool in minutes
                 </p>
+
+                {/* Add the glitch button styles */}
+                <style jsx global>{`
+                  @keyframes glitch {
+                    0% {
+                      clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%);
+                      transform: translate(0px, 0px);
+                    }
+                    2% {
+                      clip-path: polygon(0 78%, 100% 78%, 100% 100%, 0 100%);
+                      transform: translate(-5px, 0px);
+                    }
+                    4% {
+                      clip-path: polygon(0 44%, 100% 44%, 100% 54%, 0 54%);
+                      transform: translate(5px, 0px);
+                    }
+                    5% {
+                      clip-path: polygon(0 33%, 100% 33%, 100% 33%, 0 33%);
+                      transform: translate(5px, 0px);
+                    }
+                    6% {
+                      clip-path: polygon(0 50%, 100% 50%, 100% 20%, 0 20%);
+                      transform: translate(-5px, 0px);
+                    }
+                    7% {
+                      clip-path: polygon(0 10%, 100% 10%, 100% 0, 0 0);
+                      transform: translate(5px, 0px);
+                    }
+                    8% {
+                      clip-path: polygon(0 40%, 100% 40%, 100% 60%, 0 60%);
+                      transform: translate(5px, 10px) rotateX(90deg);
+                    }
+                    9% {
+                      clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+                      transform: translate(-5px, 0px);
+                    }
+                    11% {
+                      clip-path: polygon(0 15%, 100% 15%, 100% 90%, 0 90%);
+                      transform: translate(10px, 0px);
+                    }
+                    13% {
+                      clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+                      transform: translate(0, 0);
+                    }
+                    100% {
+                      clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+                      transform: translate(0, 0);
+                    }
+                  }
+
+                  @keyframes glitch-shake {
+                    0% {
+                      transform: translate(0);
+                    }
+                    20% {
+                      transform: translate(-4px, 2px);
+                    }
+                    40% {
+                      transform: translate(-2px, -2px);
+                    }
+                    60% {
+                      transform: translate(4px, 2px);
+                    }
+                    80% {
+                      transform: translate(2px, -4px);
+                    }
+                    100% {
+                      transform: translate(0);
+                    }
+                  }
+
+                  @keyframes text-flicker {
+                    0% {
+                      opacity: 0.8;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    2% {
+                      opacity: 1;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    4% {
+                      opacity: 0.8;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    8% {
+                      opacity: 1;
+                      text-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+                    }
+                    70% {
+                      opacity: 0.9;
+                      text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+                    }
+                    100% {
+                      opacity: 1;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                  }
+
+                  @keyframes border-flicker {
+                    0% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.1), 0 0 5px rgba(139, 92, 246, 0.1), 0 0 10px rgba(139, 92, 246, 0.1);
+                    }
+                    2% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.5), 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.5);
+                    }
+                    4% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.1), 0 0 5px rgba(139, 92, 246, 0.1), 0 0 10px rgba(139, 92, 246, 0.1);
+                    }
+                    8% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.6), 0 0 5px rgba(139, 92, 246, 0.6), 0 0 10px rgba(139, 92, 246, 0.6);
+                    }
+                    70% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.2), 0 0 5px rgba(139, 92, 246, 0.2), 0 0 10px rgba(139, 92, 246, 0.2);
+                    }
+                    100% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.3), 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.3);
+                    }
+                  }
+
+                  .cyber-glitch-btn {
+                    position: relative;
+                    width: auto;
+                    min-width: 180px;
+                    height: auto;
+                    background: linear-gradient(45deg, rgba(15, 14, 26, 0.8), rgba(30, 28, 52, 0.8));
+                    border: 1px solid rgba(139, 92, 246, 0.4);
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), inset 0 0 10px rgba(139, 92, 246, 0.2);
+                    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+                    font-family: 'Orbitron', 'Rajdhani', 'Courier New', monospace;
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    letter-spacing: 2px;
+                    text-transform: uppercase;
+                    color: #fff;
+                    z-index: 1;
+                    overflow: hidden;
+                    animation: border-flicker 4s linear infinite, text-flicker 4s linear infinite;
+                  }
+
+                  .cyber-glitch-btn::before,
+                  .cyber-glitch-btn::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(45deg, 
+                      rgba(139, 92, 246, 0.5), 
+                      rgba(239, 68, 68, 0.5), 
+                      rgba(59, 130, 246, 0.5));
+                    z-index: -1;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                  }
+
+                  .cyber-glitch-btn::before {
+                    filter: blur(5px);
+                  }
+
+                  .cyber-glitch-btn:hover {
+                    background: linear-gradient(45deg, rgba(20, 18, 35, 0.8), rgba(40, 38, 70, 0.8));
+                    animation: border-flicker 0.5s linear infinite, text-flicker 0.5s linear infinite;
+                  }
+
+                  .cyber-glitch-btn:hover::before {
+                    opacity: 0.4;
+                  }
+
+                  .cyber-glitch-btn:hover::after {
+                    opacity: 1;
+                    animation: glitch 2s linear infinite;
+                  }
+                  
+                  /* Add scan lines for cyberpunk effect */
+                  .cyber-glitch-btn::after {
+                    background: repeating-linear-gradient(
+                      to bottom,
+                      transparent,
+                      transparent 2px,
+                      rgba(139, 92, 246, 0.1) 3px,
+                      rgba(139, 92, 246, 0.1) 4px
+                    );
+                    opacity: 0.2;
+                  }
+
+                  /* Every 4 seconds, make the button shake for a moment */
+                  @keyframes glitch-periodic {
+                    0%, 95%, 100% {
+                      transform: translate(0);
+                    }
+                    96% {
+                      transform: translate(-5px, 0);
+                    }
+                    97% {
+                      transform: translate(5px, 0);
+                    }
+                    98% {
+                      transform: translate(-3px, 0);
+                    }
+                    99% {
+                      transform: translate(3px, 0);
+                    }
+                  }
+
+                  .cyber-glitch-btn {
+                    animation: glitch-periodic 4s infinite, border-flicker 2s infinite;
+                  }
+                `}</style>
               </section>
 
               {/* Pools List Section */}
