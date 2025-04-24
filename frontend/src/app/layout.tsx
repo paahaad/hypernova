@@ -3,6 +3,7 @@ import React from "react";
 import Layout from "@/components/layout/layout";
 import { Providers } from "@/providers/Providers";
 import { Metadata } from 'next';
+import { ThemedToaster } from "@/lib/toast";
 
 export const metadata: Metadata = {
   title: 'Hypernova',
@@ -56,6 +57,7 @@ export default function RootLayout({
           <Layout>
             {children}
           </Layout>
+          <ThemedToaster />
         </Providers>
       </body>
     </html>

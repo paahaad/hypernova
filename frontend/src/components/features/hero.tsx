@@ -8,7 +8,7 @@ import { TokenSelector } from "./token-selector";
 import { SlippageModal } from "./slippage-modal";
 import { Token } from "@/types/token";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { toast } from "sonner";
+import { themedToast } from '@/lib/toast';
 import { PublicKey } from "@solana/web3.js";
 import { connection } from "@/lib/anchor";
 
@@ -106,15 +106,15 @@ export function Hero() {
 
   const handleSwap = async () => {
     if (!publicKey) {
-      toast.error("Please connect your wallet first");
+      themedToast.error("Please connect your wallet first");
       return;
     }
 
     try {
       // TODO: Implement swap logic using Jupiter API
-      toast.success("Swap executed successfully!");
+      themedToast.success("Swap executed successfully!");
     } catch (error) {
-      toast.error("Failed to execute swap");
+      themedToast.error("Failed to execute swap");
     }
   };
 

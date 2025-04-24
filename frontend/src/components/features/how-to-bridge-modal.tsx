@@ -6,7 +6,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Copy, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+import { themedToast } from '@/lib/toast';
 import Image from "next/image";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
@@ -23,7 +23,7 @@ export function HowToBridgeModal({ isOpen, onClose }: HowToBridgeModalProps) {
   const handleCopyAddress = () => {
     if (walletAddress) {
       navigator.clipboard.writeText(walletAddress);
-      toast.success("Address copied to clipboard");
+      themedToast.success("Address copied to clipboard");
     }
   };
 

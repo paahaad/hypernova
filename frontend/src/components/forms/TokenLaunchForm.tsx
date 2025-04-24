@@ -11,6 +11,7 @@ import { connection } from '@/lib/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { HypernovaApi } from '@/lib/api-client';
 import { Upload, ImageIcon } from 'lucide-react';
+import { themedToast } from '@/lib/toast';
 
 // CylinderSlider component for 3D slider controls
 interface CylinderSliderProps {
@@ -630,6 +631,27 @@ const GlobalStyles = () => {
       .shadow-glow {
         box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
       }
+      
+      /* Custom styling for toast notifications */
+      .themed-toast {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        border-radius: 8px !important;
+        backdrop-filter: blur(8px);
+      }
+      
+      .themed-toast [data-icon] {
+        background-color: rgba(139, 92, 246, 0.2) !important;
+        color: #a78bfa !important;
+      }
+      
+      .themed-toast [data-close-button] {
+        color: rgba(255, 255, 255, 0.5) !important;
+      }
+      
+      .themed-toast [data-close-button]:hover {
+        color: rgba(255, 255, 255, 0.8) !important;
+      }
     `}</style>
   );
 };
@@ -641,6 +663,7 @@ export default function TokenLaunchForm() {
   const [isDragging, setIsDragging] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showValidation, setShowValidation] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     ticker: '',
@@ -718,7 +741,7 @@ export default function TokenLaunchForm() {
         };
         reader.readAsDataURL(file);
       } else {
-        toast.error('Please upload an image file');
+        themedToast.error('Please upload an image file');
       }
     }
   }, [formData]);
@@ -769,20 +792,21 @@ export default function TokenLaunchForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowValidation(true);
     
     // Do validation here, not during date selection
     if (!connected || !publicKey) {
-      toast.error('Please connect your wallet first');
+      themedToast.error('Please connect your wallet first');
       return;
     }
 
     if (!formData.image) {
-      toast.error('Please upload an image');
+      themedToast.error('Please upload an image');
       return;
     }
     
     if (!formData.endTime) {
-      toast.error('Please select an end time');
+      themedToast.error('Please select an end time');
       return;
     }
 
@@ -873,11 +897,11 @@ export default function TokenLaunchForm() {
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
 
-      toast.success('Token created successfully!');
+      themedToast.success('Token created successfully!');
       // Reset form or redirect
     } catch (error: any) {
       console.error('Error creating token:', error);
-      toast.error(error.message || 'Failed to create token');
+      themedToast.error(error.message || 'Failed to create token');
     } finally {
       setIsLoading(false);
     }
@@ -886,7 +910,7 @@ export default function TokenLaunchForm() {
   return (
     <div className="w-full max-w-lg mx-auto p-6">
       <GlobalStyles />
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* Name Input */}
         <div>
           <label className="block text-sm font-medium text-gray-200 mb-2">Name</label>
@@ -1022,7 +1046,7 @@ export default function TokenLaunchForm() {
                 onChange={(e) => setFormData({ ...formData, maxPurchase: e.target.value })}
                 className="w-full bg-gray-800/50 border-gray-700 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 min="0"
-                required
+                required={showValidation}
               />
             </div>
 
@@ -1033,13 +1057,16 @@ export default function TokenLaunchForm() {
                 onChange={setSelectedDate}
                 minDate={new Date()} // Minimum date is today
               />
-              {/* Keep hidden input for form submission */}
-              <Input
+              {/* Hidden input for form data, but not required until submit */}
+              <input
                 type="hidden"
                 value={formData.endTime}
                 name="endTime"
-                required
+                required={showValidation}
               />
+              {showValidation && !formData.endTime && (
+                <p className="mt-1 text-xs text-red-500">Please select an end time</p>
+              )}
             </div>
           </div>
         </Card>

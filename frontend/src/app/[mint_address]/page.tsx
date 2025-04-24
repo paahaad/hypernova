@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
+import { themedToast } from '@/lib/toast';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -52,7 +52,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
 
         setPresaleData(data);
       } catch (err: any) {
-        toast.error(err.message || 'Failed to fetch presale data');
+        themedToast.error(err.message || 'Failed to fetch presale data');
       } finally {
         setLoading(false);
       }
@@ -83,7 +83,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
         setTokenAmount(data.data.tokenAmount);
       } catch (err: any) {
         console.error('Error calculating token amount:', err);
-        toast.error(err.message || 'Failed to calculate token amount');
+        themedToast.error(err.message || 'Failed to calculate token amount');
         setTokenAmount(null);
       }
     };
@@ -95,7 +95,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
     if (!presaleData || !selectedAmount) return;
   
     if (!connected || !publicKey) {
-      toast.error('Please connect your wallet');
+      themedToast.error('Please connect your wallet');
       return;
     }
     
@@ -123,10 +123,10 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
       const signature = await sendTransaction(txData, connection);
 
-      toast.success('Purchase successful');
+      themedToast.success('Purchase successful');
       console.log('Purchase successful:', signature);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to process purchase');
+      themedToast.error(err.message || 'Failed to process purchase');
     } finally {
       setIsPurchasing(false);
     }
@@ -254,7 +254,7 @@ export default function TokenDetailsPage({ params }: TokenDetailsProps) {
               className="flex items-center gap-1"
               onClick={() => {
                 navigator.clipboard.writeText(presaleData.mint_address);
-                toast.success('Address copied to clipboard');
+                themedToast.success('Address copied to clipboard');
               }}
             >
               <span className="text-xs">{presaleData.mint_address.slice(0, 6)}...{presaleData.mint_address.slice(-4)}</span>

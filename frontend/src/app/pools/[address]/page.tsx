@@ -14,7 +14,7 @@ import { Check, Copy } from "lucide-react";
 import axios from 'axios';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
-import { toast } from 'sonner';
+import { themedToast } from '@/lib/toast';
 
 interface PoolDetails {
   whirlpool_address: string;
@@ -94,7 +94,7 @@ export default function PoolDetailsPage() {
       const { tx, positionMint } = response.data;
       
       if (!tx) {
-        toast.error('No transaction received from server');
+        themedToast.error('No transaction received from server');
         return;
       }
 
@@ -110,14 +110,14 @@ export default function PoolDetailsPage() {
       setTokenAAmount('');
       setTokenBAmount('');
       
-      toast.success('Successfully added liquidity!');
+      themedToast.success('Successfully added liquidity!');
       
       // Optionally refresh pool data or navigate to the positions tab
       setActiveTab('positions');
 
     } catch (error: any) {
       console.error('Error adding liquidity:', error);
-      toast.error(error.message || 'Failed to add liquidity');
+      themedToast.error(error.message || 'Failed to add liquidity');
     } finally {
       setIsAddingLiquidity(false);
     }
