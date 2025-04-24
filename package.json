@@ -1,0 +1,6 @@
+{
+	"devDependencies": {
+		"drizzle-kit": "0.30.5",
+		"pg-connection-string": "^2.7.0"
+	}
+}

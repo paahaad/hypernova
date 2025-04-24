@@ -67,46 +67,48 @@ export function Header() {
   return (
     <header className="relative z-20">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           {/* Logo */}
-          <Link href="/" className="flex flex-col items-start cursor-pointer relative">
-            <div className="relative h-10 w-48 md:w-80 mr-3">
-              <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
-                <Image
-                  src="/logoWhite.png"
-                  alt="Hypernova Logo"
-                  width={240}
-                  height={24}
-                  className="rounded-32 bg-black"
-                />
+          <div className="flex-1">
+            <Link href="/" className="flex flex-col items-start cursor-pointer relative">
+              <div className="relative h-10 w-48 md:w-80 mr-3">
+                <div className="absolute inset-0.5 bg-black rounded-full flex items-center justify-center">
+                  <Image
+                    src="/logoWhite.png"
+                    alt="Hypernova Logo"
+                    width={240}
+                    height={24}
+                    className="rounded-32 bg-black"
+                  />
+                </div>
+                <div className="absolute -bottom-6 right-8 text-[10px] md:text-xs font-medium text-white bg-purple-600/40 border border-purple-500/30 px-2 py-0.5 rounded-sm">
+                  {NETWORK_NAME}
+                </div>
               </div>
-              <div className="absolute -bottom-6 right-8 text-[10px] md:text-xs font-medium text-white bg-purple-600/40 border border-purple-500/30 px-2 py-0.5 rounded-sm">
-                {NETWORK_NAME}
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {/* <Link href="/swap" className="text-sm font-medium text-gray-200 hover:text-white transition-colors">
+          {/* Desktop Navigation - centered */}
+          <nav className="hidden md:flex items-center justify-center flex-1">
+            {/* <Link href="/swap" className="text-base font-medium text-gray-200 hover:text-white transition-colors px-4">
               Swap
             </Link> */}
             <Link
               href="/pools"
-              className="text-sm font-medium text-gray-200 hover:text-white transition-colors"
+              className="text-base font-medium text-gray-200 hover:text-white transition-colors px-4"
             >
               Liquidity
             </Link>
             <Link
               href="/launch"
-              className="text-sm font-medium text-gray-200 hover:text-white transition-colors"
+              className="text-base font-medium text-gray-200 hover:text-white transition-colors px-4"
             >
               Launch
             </Link>
           </nav>
 
           {/* Action Buttons */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-3 flex-1 justify-end">
             {connected && (
               <>
                 <Button
@@ -135,7 +137,7 @@ export function Header() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center md:hidden space-x-4">
+          <div className="flex items-center md:hidden space-x-4 ml-auto">
             {connected ? (
               <>
                 {solBalance !== null && (
@@ -172,19 +174,19 @@ export function Header() {
             <nav className="flex flex-col space-y-4">
               <Link
                 href="/swap"
-                className="text-sm font-medium text-gray-200 hover:text-white transition-colors py-2"
+                className="text-base font-medium text-gray-200 hover:text-white transition-colors py-2"
               >
                 Swap
               </Link>
               <Link
                 href="/pools"
-                className="text-sm font-medium text-gray-200 hover:text-white transition-colors py-2"
+                className="text-base font-medium text-gray-200 hover:text-white transition-colors py-2"
               >
                 Liquidity
               </Link>
               <Link
                 href="/launch"
-                className="text-sm font-medium text-gray-200 hover:text-white transition-colors py-2"
+                className="text-base font-medium text-gray-200 hover:text-white transition-colors py-2"
               >
                 Launch
               </Link>

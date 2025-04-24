@@ -2,8 +2,8 @@ import { getHypernovaProgram } from "@project/anchor";
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
 import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair } from "@solana/web3.js";
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/server";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+import { presales } from "@/db/repositories";
 
 interface PresaleInput {
     name: string;
@@ -21,11 +21,16 @@ interface PresaleInput {
 }
 
 export async function GET(req: Request) {
-    const { data, error } = await supabase
-        .from('presales')
-        .select('name, symbol, uri, total_supply, min_purchase, max_purchase, presale_percentage, end_time, user_address , mint_address, presale_address');
-
-    return NextResponse.json({ data, error });
+    try {
+        const allPresales = await presales.findAll();
+        return NextResponse.json({ data: allPresales });
+    } catch (error: any) {
+        console.error("Error fetching presales:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Failed to fetch presales" },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(req: Request) {
@@ -109,37 +114,33 @@ export async function POST(req: Request) {
             program.programId
         );
 
-        console.log("Reaching here at 99")
-        const { data, error } = await supabase
-            .from('presales')
-            .insert({
-                id: id,
-                name: body.name,
-                symbol: body.symbol,
-                uri: body.uri,
-                description: body.description,
-                total_supply: body.totalSupply,
-                // ticker as u64 / (total_supply * presale_percentage as u64 / 100);
-                token_price: body.tokenPrice,
-                min_purchase: body.minPurchase,
-                max_purchase: body.maxPurchase,
-                mint_address: mintPDA.toBase58(),
-                presale_address: presalePDA.toBase58(),
-                presale_percentage: body.presalePercentage,
-                end_time: body.endTime,
-                user_address: body.userAddress,
-            })
-            .select();
+        console.log("Reaching here at 99");
+        // Create the presale record using Drizzle
+        const newPresale = await presales.create({
+            id: id,
+            name: body.name,
+            symbol: body.symbol,
+            uri: body.uri,
+            description: body.description,
+            total_supply: body.totalSupply,
+            // ticker as u64 / (total_supply * presale_percentage as u64 / 100);
+            token_price: body.tokenPrice,
+            min_purchase: body.minPurchase,
+            max_purchase: body.maxPurchase,
+            mint_address: mintPDA.toBase58(),
+            presale_address: presalePDA.toBase58(),
+            presale_percentage: body.presalePercentage,
+            end_time: body.endTime,
+            user_address: body.userAddress,
+            total_raised: 0,
+            target_amount: body.presaleAmount * body.tokenPrice,
+            start_time: new Date(currentTime * 1000),
+            finalized: false
+        });
 
-        if (error) {
-            console.log('Supabase error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
+        if (!newPresale || newPresale.length === 0) {
             return NextResponse.json(
-                { success: false, error: error.message || "Error inserting presale data" },
+                { success: false, error: "Error creating presale data" },
                 { status: 500 }
             );
         }
@@ -170,8 +171,6 @@ export async function POST(req: Request) {
             true
         );
 
-
-
         const createPresaleATAInstruction = createAssociatedTokenAccountInstruction(
             new PublicKey(body.userAddress), // payer
             presaleATA,                      // ata
@@ -179,7 +178,6 @@ export async function POST(req: Request) {
             mintPDA                          // mint
         );
         tx.add(createPresaleATAInstruction);
-
 
         const tx2 = await program.methods
             .mintToken(new BN(id))
