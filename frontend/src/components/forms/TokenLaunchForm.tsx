@@ -505,13 +505,6 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
               </button>
             </div>
             
-            {/* Today indicator above calendar */}
-            <div className="mb-2 text-xs text-center text-purple-400 font-medium">
-              <span className="inline-block px-1.5 py-0.5 bg-purple-500/20 rounded-full">
-                ● Today starts the calendar
-              </span>
-            </div>
-            
             {/* Horizontal scrollable calendar */}
             <div 
               ref={scrollRef}
