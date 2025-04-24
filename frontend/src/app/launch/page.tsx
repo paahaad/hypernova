@@ -31,6 +31,9 @@ interface Presale {
   user_address: string;
   mint_address: string;
   presale_address: string;
+  metadata?: {
+    image?: string;
+  };
 }
 
 type SortOption = 'newest' | 'oldest' | 'highest-percentage' | 'lowest-percentage' | 'highest-price' | 'lowest-price';
@@ -267,7 +270,22 @@ export default function LaunchPage() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                            <div className="text-white text-2xl">🧩</div>
+                            {presale.metadata && presale.metadata.image ? (
+                              <img 
+                                src={presale.metadata.image} 
+                                alt={presale.name || "Token image"} 
+                                className="w-full h-full object-cover rounded-lg" 
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (nextElement) {
+                                    nextElement.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="text-white text-2xl">🧩</div>
+                            )}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
