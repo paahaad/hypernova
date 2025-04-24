@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import type { Application } from 'express';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import swaggerUi from 'swagger-ui-express';
@@ -472,5 +472,131 @@ app.post('/liquidity/remove', async (req, res) => {
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy' });
 });
+
+/**
+ * @swagger
+ * /fees:
+ *   get:
+ *     summary: Get fee details for a specific token pair
+ *     tags: [Fees]
+ *     parameters:
+ *       - in: query
+ *         name: tokenA
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The mint address of token A
+ *       - in: query
+ *         name: tokenB
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The mint address of token B
+ *     responses:
+ *       200:
+ *         description: Fee details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 binStep:
+ *                   type: number
+ *                   description: The bin step size (tick spacing) for the token pair
+ *                 baseFee:
+ *                   type: number
+ *                   description: The base fee rate
+ *                 maxFee:
+ *                   type: number
+ *                   description: The maximum fee rate
+ *                 protocolFee:
+ *                   type: number
+ *                   description: The protocol fee rate
+ *       400:
+ *         description: Invalid token addresses provided
+ *       500:
+ *         description: Error occurred while fetching fee details
+ */
+// @ts-ignore
+app.post('/fees', async (req , res ) => {
+    try {
+        const { tokenA, tokenB } = req.query;
+        
+        if (!tokenA || !tokenB) {
+            return res.status(400).json({ error: "Both tokenA and tokenB addresses are required" });
+        }
+
+        // Validate token addresses
+        try {
+            new PublicKey(tokenA as string);
+            new PublicKey(tokenB as string);
+        } catch (error) {
+            return res.status(400).json({ error: "Invalid token address format" });
+        }
+
+        const feeTiers = await ctx.program.account.feeTier.all();
+        const configAccount = await ctx.fetcher.getConfig(config);
+        
+        if (!configAccount) {
+            throw new Error("Config account not found");
+        }
+
+        // Get the appropriate fee tier based on token pair
+        // For most stable pairs, we use tick spacing of 1
+        // For more volatile pairs, we use larger tick spacing
+        // This is a simplified version - in production, you'd want to implement more sophisticated logic
+        const tokenPairVolatility = await getTokenPairVolatility(tokenA as string, tokenB as string);
+        let appropriateFeeTier;
+
+        if (tokenPairVolatility === 'stable') {
+            appropriateFeeTier = feeTiers.find(tier => tier.account.tickSpacing === 1);
+        } else if (tokenPairVolatility === 'normal') {
+            appropriateFeeTier = feeTiers.find(tier => tier.account.tickSpacing === 64);
+        } else { // volatile
+            appropriateFeeTier = feeTiers.find(tier => tier.account.tickSpacing === 128);
+        }
+
+        if (!appropriateFeeTier) {
+            appropriateFeeTier = feeTiers[0]; // fallback to first fee tier
+        }
+
+        res.json({
+            binStep: appropriateFeeTier.account.tickSpacing,
+            baseFee: appropriateFeeTier.account.defaultFeeRate,
+            maxFee: Math.max(...feeTiers.map(tier => tier.account.defaultFeeRate)),
+            protocolFee: configAccount.defaultProtocolFeeRate
+        });
+    } catch (error) {
+        console.error("Error fetching fee details:", error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+});
+
+// Helper function to determine token pair volatility
+async function getTokenPairVolatility(tokenAAddress: string, tokenBAddress: string): Promise<'stable' | 'normal' | 'volatile'> {
+    // This is a simplified implementation
+    // In a production environment, you would:
+    // 1. Look up historical price data for the token pair
+    // 2. Calculate volatility metrics (e.g., standard deviation of returns)
+    // 3. Classify based on volatility thresholds
+    
+    // For now, we'll consider common stablecoin pairs as 'stable'
+    // and everything else as 'normal'
+    const stablecoins = [
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+        // Add other stablecoin addresses as needed
+    ];
+
+    if (stablecoins.includes(tokenAAddress) && stablecoins.includes(tokenBAddress)) {
+        return 'stable';
+    }
+    
+    if (stablecoins.includes(tokenAAddress) || stablecoins.includes(tokenBAddress)) {
+        return 'normal';
+    }
+    
+    return 'volatile';
+}
 
 startServer(); 
