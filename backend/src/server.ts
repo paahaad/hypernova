@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import type { Application } from 'express';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import swaggerUi from 'swagger-ui-express';
@@ -10,6 +10,17 @@ import removeLP from './functions/pools/removeLP';
 import { ctx, config, configExtension } from './client';
 import { envPORT } from './env';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import { checkDatabaseConnection, db } from './db/config';
+import { poolRepository } from './db/repositories/poolRepository';
+import { swapRepository } from './db/repositories/swapRepository';
+import { liquidityRepository } from './db/repositories/liquidityRepository';
+import { tokenRepository } from './db/repositories/tokenRepository';
+import { transactionRepository } from './db/repositories/transactionRepository';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Load environment variables
+dotenv.config();
 
 const app: Application = express();
 app.use(cors({
@@ -72,6 +83,13 @@ async function initializeWhirlpools() {
 // Start server only after initialization
 async function startServer() {
     try {
+        // Check database connection first
+        const dbConnected = await checkDatabaseConnection();
+        if (!dbConnected) {
+            console.error("Unable to connect to the database. Please check your connection settings.");
+            process.exit(1);
+        }
+        
         await initializeWhirlpools();
         const PORT = envPORT;
         app.listen(PORT, () => {
@@ -129,7 +147,7 @@ async function startServer() {
  */
 app.post('/swap', async (req, res) => {
     try {
-        const { whirlpoolAddress, inputTokenAmount, aToB, amountSpecifiedIsInput, minOutputAmount } = req.body;
+        const { whirlpoolAddress, inputTokenAmount, aToB, amountSpecifiedIsInput, minOutputAmount, userAddress } = req.body;
         const result = await swap(
             new PublicKey(whirlpoolAddress),
             inputTokenAmount,
@@ -137,8 +155,28 @@ app.post('/swap', async (req, res) => {
             amountSpecifiedIsInput,
             minOutputAmount
         );
+
+        // Find the pool in the database
+        const pool = await poolRepository.findByAddress(whirlpoolAddress);
+        if (!pool) {
+            throw new Error("Pool not found in database");
+        }
+
+        // Store the swap data
+        await swapRepository.create({
+            pool_id: pool.id,
+            user_wallet: userAddress,
+            amount_in: inputTokenAmount,
+            amount_out: 0, // We don't have the actual output amount, so use 0 as a default
+            token_in_id: aToB ? (pool.token_a_id ?? undefined) : (pool.token_b_id ?? undefined),
+            token_out_id: aToB ? (pool.token_b_id ?? undefined) : (pool.token_a_id ?? undefined),
+            tx_hash: result.transactionId || '' // Using transactionId from result
+        });
+
+        console.log("Swap transaction saved to database:", result.transactionId);
         res.json(result);
     } catch (error) {
+        console.error("Swap error:", error);
         res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
@@ -175,13 +213,69 @@ app.post('/swap', async (req, res) => {
  */
 app.post('/pool', async (req, res) => {
     try {
-        const { tokenMintA, tokenMintB , userAddress } = req.body;
+        const { tokenMintA, tokenMintB, userAddress, tokenAData, tokenBData } = req.body;
         const result = await createPool(
             new PublicKey(tokenMintA),
             new PublicKey(tokenMintB),
             new PublicKey(userAddress)
         );
-        console.log(result);
+
+        // Ensure tokens exist in the database
+        let tokenA, tokenB;
+        
+        if (tokenAData) {
+            tokenA = await tokenRepository.ensureToken({
+                mint_address: tokenMintA,
+                symbol: tokenAData.symbol,
+                name: tokenAData.name,
+                decimals: tokenAData.decimals,
+                logo_uri: tokenAData.logo_uri
+            });
+        } else {
+            tokenA = await tokenRepository.findByMintAddress(tokenMintA);
+            if (!tokenA) {
+                // Create a basic token record if data not provided
+                tokenA = await tokenRepository.ensureToken({
+                    mint_address: tokenMintA,
+                    symbol: "TOKEN_A",
+                    name: "Token A",
+                    decimals: 9,
+                    logo_uri: ""
+                });
+            }
+        }
+        
+        if (tokenBData) {
+            tokenB = await tokenRepository.ensureToken({
+                mint_address: tokenMintB,
+                symbol: tokenBData.symbol,
+                name: tokenBData.name,
+                decimals: tokenBData.decimals,
+                logo_uri: tokenBData.logo_uri
+            });
+        } else {
+            tokenB = await tokenRepository.findByMintAddress(tokenMintB);
+            if (!tokenB) {
+                // Create a basic token record if data not provided
+                tokenB = await tokenRepository.ensureToken({
+                    mint_address: tokenMintB,
+                    symbol: "TOKEN_B",
+                    name: "Token B",
+                    decimals: 9,
+                    logo_uri: ""
+                });
+            }
+        }
+
+        // Insert new pool record
+        await poolRepository.create({
+            pool_address: result.whirlpoolAddress.toString(),
+            token_a_id: tokenA?.id,
+            token_b_id: tokenB?.id,
+            lp_mint: 'pending' // LP mint might not be available immediately
+        });
+
+        console.log("Pool created and saved to database:", result.whirlpoolAddress.toString());
         res.json({ success: true, tx: result.tx, whirlpoolAddress: result.whirlpoolAddress });
     } catch (error) {
         console.log(error);
@@ -243,8 +337,41 @@ app.post('/liquidity/add', async (req, res) => {
             priceLower,
             priceUpper
         );
+
+        // Find the pool
+        const pool = await poolRepository.findByAddress(whirlpoolAddress);
+        if (!pool) {
+            throw new Error("Pool not found in database");
+        }
+
+        // Check if user already has a position in this pool
+        const existingPosition = await liquidityRepository.findByUserAndPool(userAddress, pool.id);
+        
+        const liquidityAmount = 0; // We don't have the actual liquidity amount, so use 0 as a default
+        
+        if (existingPosition) {
+            // Update existing position
+            await liquidityRepository.update(existingPosition.id, {
+                amount_token_a: Number(existingPosition.amount_token_a) + Number(tokenAmountA),
+                amount_token_b: Number(existingPosition.amount_token_b) + Number(tokenAmountB),
+                lp_tokens: Number(existingPosition.lp_tokens) + Number(liquidityAmount)
+            });
+            console.log("Updated liquidity position for user:", userAddress);
+        } else {
+            // Create new position
+            await liquidityRepository.create({
+                pool_id: pool.id,
+                user_wallet: userAddress,
+                amount_token_a: tokenAmountA,
+                amount_token_b: tokenAmountB,
+                lp_tokens: liquidityAmount
+            });
+            console.log("Created new liquidity position for user:", userAddress);
+        }
+        
         res.json(result);
     } catch (error) {
+        console.error("Add liquidity error:", error);
         res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
@@ -285,14 +412,41 @@ app.post('/liquidity/add', async (req, res) => {
  */
 app.post('/liquidity/remove', async (req, res) => {
     try {
-        const { whirlpoolAddress, positionAddress, liquidityAmount } = req.body;
+        const { whirlpoolAddress, positionAddress, liquidityAmount, userAddress } = req.body;
         const result = await removeLP(
             new PublicKey(whirlpoolAddress),
             new PublicKey(positionAddress),
             liquidityAmount
         );
+
+        // Find the pool
+        const pool = await poolRepository.findByAddress(whirlpoolAddress);
+        if (!pool) {
+            throw new Error("Pool not found in database");
+        }
+
+        // Find the user's liquidity position
+        const position = await liquidityRepository.findByUserAndPool(userAddress, pool.id);
+        if (!position) {
+            throw new Error("Liquidity position not found for user");
+        }
+
+        // Calculate the percentage of liquidity being removed
+        const removalRatio = liquidityAmount / Number(position.lp_tokens);
+        const tokenAToRemove = Number(position.amount_token_a) * removalRatio;
+        const tokenBToRemove = Number(position.amount_token_b) * removalRatio;
+        
+        // Update the position
+        await liquidityRepository.update(position.id, {
+            amount_token_a: Number(position.amount_token_a) - tokenAToRemove,
+            amount_token_b: Number(position.amount_token_b) - tokenBToRemove,
+            lp_tokens: Number(position.lp_tokens) - liquidityAmount
+        });
+
+        console.log("Updated liquidity position after removal for user:", userAddress);
         res.json(result);
     } catch (error) {
+        console.error("Remove liquidity error:", error);
         res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
