@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from "@/lib/supabase/server";
 import { PublicKey } from '@solana/web3.js';
 import { createPool } from '@/lib/whirlpool/functions/createPool';
 import { pools, tokens } from '@/db/repositories';
@@ -9,11 +8,83 @@ import { transformDatabaseResults, removeHypPrefix } from '@/db/utils';
 export async function GET() {
     try {
         const allPools = await pools.findAll();
-        return NextResponse.json({ data: allPools }, { status: 200 });
+        
+        // For each pool, fetch token details
+        const poolsWithTokenData = await Promise.all(
+            allPools.map(async (pool) => {
+                let tokenAMint = '';
+                let tokenBMint = '';
+                let tokenASymbol = '';
+                let tokenBSymbol = '';
+                let tokenAName = '';
+                let tokenBName = '';
+                let tokenALogoURI = '';
+                let tokenBLogoURI = '';
+                
+                // Fetch token A details if token_a_id exists
+                if (pool.token_a_id) {
+                    const tokenADetails = await tokens.findById(pool.token_a_id);
+                    if (tokenADetails && tokenADetails.length > 0) {
+                        tokenAMint = tokenADetails[0].mint_address;
+                        tokenASymbol = tokenADetails[0].symbol;
+                        tokenAName = tokenADetails[0].name;
+                        tokenALogoURI = tokenADetails[0].logo_uri || '';
+                    }
+                }
+                
+                // Fetch token B details if token_b_id exists
+                if (pool.token_b_id) {
+                    const tokenBDetails = await tokens.findById(pool.token_b_id);
+                    if (tokenBDetails && tokenBDetails.length > 0) {
+                        tokenBMint = tokenBDetails[0].mint_address;
+                        tokenBSymbol = tokenBDetails[0].symbol;
+                        tokenBName = tokenBDetails[0].name;
+                        tokenBLogoURI = tokenBDetails[0].logo_uri || '';
+                    }
+                }
+                
+                // Format metrics properly
+                let liquidity = '$0';
+                let volume24h = '$0';
+                
+                if (pool.liquidity) {
+                    // Format as currency
+                    liquidity = `$${parseFloat(pool.liquidity).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}`;
+                }
+                
+                if (pool.volume_24h) {
+                    // Format as currency
+                    volume24h = `$${parseFloat(pool.volume_24h).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}`;
+                }
+                
+                return {
+                    whirlpool_address: pool.pool_address,
+                    token_mint_a: tokenAMint || `Unknown-${pool.token_a_id?.substring(0, 8) || 'Token-A'}`,
+                    token_mint_b: tokenBMint || `Unknown-${pool.token_b_id?.substring(0, 8) || 'Token-B'}`,
+                    token_a_symbol: tokenASymbol || 'UNK',
+                    token_b_symbol: tokenBSymbol || 'UNK',
+                    token_a_name: tokenAName || 'Unknown Token A',
+                    token_b_name: tokenBName || 'Unknown Token B',
+                    token_a_logo_uri: tokenALogoURI,
+                    token_b_logo_uri: tokenBLogoURI,
+                    created_at: pool.created_at || new Date().toISOString(),
+                    liquidity: liquidity,
+                    volume_24h: volume24h
+                };
+            })
+        );
+        
+        return NextResponse.json({ success: true, pools: poolsWithTokenData }, { status: 200 });
     } catch (error) {
         console.error('Error fetching pools:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch pools' },
+            { error: 'Failed to fetch pools', success: false },
             { status: 500 }
         );
     }

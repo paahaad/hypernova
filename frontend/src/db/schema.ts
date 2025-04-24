@@ -52,6 +52,12 @@ export const tb_pools = pgTable('tb_pools', {
   token_a_id: uuid('token_a_id').references(() => tb_tokens.id),
   token_b_id: uuid('token_b_id').references(() => tb_tokens.id),
   lp_mint: text('lp_mint').notNull(),
+  liquidity: numeric('liquidity').default('0'),
+  volume_24h: numeric('volume_24h').default('0'),
+  fees_24h: numeric('fees_24h').default('0'),
+  apr_24h: numeric('apr_24h').default('0'),
+  tick_spacing: integer('tick_spacing'),
+  fee_rate: integer('fee_rate'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()
 });

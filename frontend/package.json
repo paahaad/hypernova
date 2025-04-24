@@ -15,7 +15,8 @@
     "db:generate": "drizzle-kit generate:pg",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx src/db/migrate.ts"
+    "db:migrate": "tsx src/db/migrate.ts",
+    "migrate:pool-metrics": "tsx src/db/migrations/run-pool-metrics-migration.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
