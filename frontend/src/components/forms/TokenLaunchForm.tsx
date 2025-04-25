@@ -12,6 +12,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { HypernovaApi } from '@/lib/api-client';
 import { Upload, ImageIcon, Loader2 } from 'lucide-react';
 import { themedToast } from '@/lib/toast';
+import { useRouter } from 'next/navigation';
 
 // CylinderSlider component for 3D slider controls
 interface CylinderSliderProps {
@@ -676,6 +677,7 @@ const GlobalStyles = () => {
 type UploadStatus = 'idle' | 'uploading_image' | 'uploading_metadata' | 'creating_token' | 'signing_transaction' | 'complete' | 'error';
 
 export default function TokenLaunchForm() {
+  const router = useRouter();
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -972,6 +974,11 @@ export default function TokenLaunchForm() {
         console.log('signature', signature);
         setUploadStatus('complete');
         themedToast.success('Token created successfully!');
+        
+        // Navigate to tokens page after successful launch with a slight delay
+        setTimeout(() => {
+          router.push('/tokens');
+        }, 1500);
       } catch (txError: any) {
         console.error('Transaction error details:', txError);
         // Re-throw to be caught by the outer try-catch

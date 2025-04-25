@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import TokenLaunchForm from "@/components/forms/TokenLaunchForm";
+import PoolLaunchForm from "@/components/forms/PoolLaunchForm";
 import { ArrowLeft } from "lucide-react";
 
-export default function LaunchPage() {
+export default function CreatePoolPage() {
   return (
     <div className="min-h-screen bg-black">
       {/* Main Content */}
@@ -19,8 +19,10 @@ export default function LaunchPage() {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-8 relative z-10">
-          {/* Token Launch Form */}
-          <TokenLaunchForm />
+          {/* Pool Creation Form */}
+          <div className="w-full max-w-xl">
+            <PoolLaunchForm />
+          </div>
         </div>
       </div>
     </div>

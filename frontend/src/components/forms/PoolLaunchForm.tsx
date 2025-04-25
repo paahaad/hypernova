@@ -10,19 +10,38 @@ import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
 import axios from 'axios';
 import { themedToast } from '@/lib/toast';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 interface FormData {
   tokenMintA: string;
   tokenMintB: string;
 }
 
+type StatusState = 'idle' | 'creating' | 'signing' | 'complete' | 'error';
+
 export default function PoolLaunchForm() {
+  const router = useRouter();
   const { publicKey, sendTransaction } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<StatusState>('idle');
   const [formData, setFormData] = useState<FormData>({
     tokenMintA: '',
     tokenMintB: '',
   });
+
+  const getButtonText = () => {
+    if (!publicKey) return 'Connect Your Wallet to Continue';
+    
+    switch (status) {
+      case 'idle': return 'Create Pool';
+      case 'creating': return 'Creating Pool...';
+      case 'signing': return 'Waiting for Signature...';
+      case 'complete': return 'Pool Created Successfully!';
+      case 'error': return 'Retry Pool Creation';
+      default: return 'Create Pool';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +51,7 @@ export default function PoolLaunchForm() {
     }
 
     setIsLoading(true);
+    setStatus('creating');
     try {
       const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/pool`, {
         tokenMintA: formData.tokenMintA,
@@ -47,16 +67,28 @@ export default function PoolLaunchForm() {
         toast.message(response.data.message);
         return;
       }
+      
+      setStatus('signing');
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
       // TODO: Store the pool data in the database
+      setStatus('complete');
       themedToast.success('Pool created successfully!');
+      
+      // Navigate to pools page after successful creation
+      setTimeout(() => {
+        router.push('/pools');
+      }, 1500);
     } catch (error: any) {
       console.log('error', error);
+      setStatus('error');
       themedToast.error(error.message || 'Failed to create pool');
     } finally {
-      setIsLoading(false);
+      if (status !== 'complete') {
+        setIsLoading(false);
+        setStatus('idle');
+      }
     }
   };
 
@@ -105,7 +137,8 @@ export default function PoolLaunchForm() {
           className="w-full bg-green-500 hover:bg-green-600 text-white py-6 text-lg"
           disabled={isLoading}
         >
-          {isLoading ? 'Creating Pool...' : 'Create Pool'}
+          {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+          {getButtonText()}
         </Button>
       </form>
     </div>
