@@ -5,21 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import PoolLaunchForm from "@/components/forms/PoolLaunchForm";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu";
 import { ChevronDown, Clock, ArrowDownUp, Filter, Check, Copy } from "lucide-react";
 
 interface Pool {
   whirlpool_address: string;
   token_mint_a: string;
   token_mint_b: string;
+  token_a_symbol?: string;
+  token_b_symbol?: string;
+  token_a_name?: string;
+  token_b_name?: string;
+  token_a_logo_uri?: string;
+  token_b_logo_uri?: string;
   created_at: string;
   liquidity?: string;
   volume_24h?: string;
@@ -27,7 +24,7 @@ interface Pool {
   apr_24h?: string;
 }
 
-type SortOption = 'liquidity' | 'volume' | 'fees' | 'apr' | 'newest';
+type SortOption = 'liquidity' | 'volume' | 'newest';
 
 interface CopiedState {
   [key: string]: boolean;
@@ -41,6 +38,7 @@ export default function PoolsPage() {
   const [sortOption, setSortOption] = useState<SortOption>('volume');
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedStates, setCopiedStates] = useState<CopiedState>({});
+  const [refreshing, setRefreshing] = useState(false);
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
@@ -54,22 +52,33 @@ export default function PoolsPage() {
     }
   };
 
+  const handleRefreshPools = async () => {
+    setRefreshing(true);
+    setLoading(true);
+    try {
+      const response = await fetch('/api/pools');
+      const data = await response.json();
+      if (data.success && data.pools) {
+        setPools(data.pools);
+        setFilteredPools(data.pools);
+      }
+    } catch (error) {
+      console.error('Error refreshing pools:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     const fetchPools = async () => {
       try {
         const response = await fetch('/api/pools');
         const data = await response.json();
         if (data.success && data.pools) {
-          // Temporary mock data for demonstration
-          const poolsWithData = data.pools.map((pool: Pool) => ({
-            ...pool,
-            liquidity: `$${(Math.random() * 10000000).toFixed(2)}`,
-            volume_24h: `$${(Math.random() * 1000000).toFixed(2)}`,
-            fees_24h: `$${(Math.random() * 10000).toFixed(2)}`,
-            apr_24h: `${(Math.random() * 1000).toFixed(2)}%`
-          }));
-          setPools(poolsWithData);
-          setFilteredPools(poolsWithData);
+          // Data is already formatted correctly from the API
+          setPools(data.pools);
+          setFilteredPools(data.pools);
         }
       } catch (error) {
         console.error('Error fetching pools:', error);
@@ -89,7 +98,9 @@ export default function PoolsPage() {
       filtered = filtered.filter(pool => 
         pool.whirlpool_address.toLowerCase().includes(term) || 
         pool.token_mint_a.toLowerCase().includes(term) ||
-        pool.token_mint_b.toLowerCase().includes(term)
+        pool.token_mint_b.toLowerCase().includes(term) ||
+        (pool.token_a_symbol && pool.token_a_symbol.toLowerCase().includes(term)) ||
+        (pool.token_b_symbol && pool.token_b_symbol.toLowerCase().includes(term))
       );
     }
     
@@ -99,12 +110,6 @@ export default function PoolsPage() {
         break;
       case 'volume':
         filtered.sort((a, b) => parseFloat(b.volume_24h?.replace('$', '') || '0') - parseFloat(a.volume_24h?.replace('$', '') || '0'));
-        break;
-      case 'fees':
-        filtered.sort((a, b) => parseFloat(b.fees_24h?.replace('$', '') || '0') - parseFloat(a.fees_24h?.replace('$', '') || '0'));
-        break;
-      case 'apr':
-        filtered.sort((a, b) => parseFloat(b.apr_24h?.replace('%', '') || '0') - parseFloat(a.apr_24h?.replace('%', '') || '0'));
         break;
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -118,8 +123,6 @@ export default function PoolsPage() {
     switch (sortOption) {
       case 'liquidity': return 'Liquidity';
       case 'volume': return 'Volume 24H';
-      case 'fees': return 'Fees 24H';
-      case 'apr': return 'APR 24H';
       case 'newest': return 'Newest First';
       default: return 'Sort By';
     }
@@ -129,8 +132,6 @@ export default function PoolsPage() {
     switch (sortOption) {
       case 'liquidity':
       case 'volume':
-      case 'fees':
-      case 'apr':
         return <ArrowDownUp className="h-4 w-4" />;
       case 'newest':
         return <Clock className="h-4 w-4" />;
@@ -161,16 +162,226 @@ export default function PoolsPage() {
               {/* Create Pool Section */}
               <section className="flex flex-col items-center gap-4 w-full max-w-6xl mb-12">
                 <Button 
-                  variant="default" 
+                  variant="outline" 
                   size="lg"
                   onClick={() => setShowCreatePoolForm(true)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl py-6 px-8 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+                  className="cyber-glitch-btn text-white py-4 px-8 transition-all duration-200"
                 >
                   Create Pool
                 </Button>
                 <p className="text-gray-300 text-sm">
                   Create a new liquidity pool in minutes
                 </p>
+
+                {/* Add the glitch button styles */}
+                <style jsx global>{`
+                  @keyframes glitch {
+                    0% {
+                      clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%);
+                      transform: translate(0px, 0px);
+                    }
+                    2% {
+                      clip-path: polygon(0 78%, 100% 78%, 100% 100%, 0 100%);
+                      transform: translate(-5px, 0px);
+                    }
+                    4% {
+                      clip-path: polygon(0 44%, 100% 44%, 100% 54%, 0 54%);
+                      transform: translate(5px, 0px);
+                    }
+                    5% {
+                      clip-path: polygon(0 33%, 100% 33%, 100% 33%, 0 33%);
+                      transform: translate(5px, 0px);
+                    }
+                    6% {
+                      clip-path: polygon(0 50%, 100% 50%, 100% 20%, 0 20%);
+                      transform: translate(-5px, 0px);
+                    }
+                    7% {
+                      clip-path: polygon(0 10%, 100% 10%, 100% 0, 0 0);
+                      transform: translate(5px, 0px);
+                    }
+                    8% {
+                      clip-path: polygon(0 40%, 100% 40%, 100% 60%, 0 60%);
+                      transform: translate(5px, 10px) rotateX(90deg);
+                    }
+                    9% {
+                      clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+                      transform: translate(-5px, 0px);
+                    }
+                    11% {
+                      clip-path: polygon(0 15%, 100% 15%, 100% 90%, 0 90%);
+                      transform: translate(10px, 0px);
+                    }
+                    13% {
+                      clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+                      transform: translate(0, 0);
+                    }
+                    100% {
+                      clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+                      transform: translate(0, 0);
+                    }
+                  }
+
+                  @keyframes glitch-shake {
+                    0% {
+                      transform: translate(0);
+                    }
+                    20% {
+                      transform: translate(-4px, 2px);
+                    }
+                    40% {
+                      transform: translate(-2px, -2px);
+                    }
+                    60% {
+                      transform: translate(4px, 2px);
+                    }
+                    80% {
+                      transform: translate(2px, -4px);
+                    }
+                    100% {
+                      transform: translate(0);
+                    }
+                  }
+
+                  @keyframes text-flicker {
+                    0% {
+                      opacity: 0.8;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    2% {
+                      opacity: 1;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    4% {
+                      opacity: 0.8;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                    8% {
+                      opacity: 1;
+                      text-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+                    }
+                    70% {
+                      opacity: 0.9;
+                      text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+                    }
+                    100% {
+                      opacity: 1;
+                      text-shadow: 0 0 29px rgba(139, 92, 246, 0.6);
+                    }
+                  }
+
+                  @keyframes border-flicker {
+                    0% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.1), 0 0 5px rgba(139, 92, 246, 0.1), 0 0 10px rgba(139, 92, 246, 0.1);
+                    }
+                    2% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.5), 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.5);
+                    }
+                    4% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.1), 0 0 5px rgba(139, 92, 246, 0.1), 0 0 10px rgba(139, 92, 246, 0.1);
+                    }
+                    8% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.6), 0 0 5px rgba(139, 92, 246, 0.6), 0 0 10px rgba(139, 92, 246, 0.6);
+                    }
+                    70% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.2), 0 0 5px rgba(139, 92, 246, 0.2), 0 0 10px rgba(139, 92, 246, 0.2);
+                    }
+                    100% {
+                      box-shadow: 0 0 2px rgba(139, 92, 246, 0.3), 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.3);
+                    }
+                  }
+
+                  .cyber-glitch-btn {
+                    position: relative;
+                    width: auto;
+                    min-width: 180px;
+                    height: auto;
+                    background: linear-gradient(45deg, rgba(15, 14, 26, 0.8), rgba(30, 28, 52, 0.8));
+                    border: 1px solid rgba(139, 92, 246, 0.4);
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), inset 0 0 10px rgba(139, 92, 246, 0.2);
+                    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+                    font-family: 'Orbitron', 'Rajdhani', 'Courier New', monospace;
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    letter-spacing: 2px;
+                    text-transform: uppercase;
+                    color: #fff;
+                    z-index: 1;
+                    overflow: hidden;
+                    animation: border-flicker 4s linear infinite, text-flicker 4s linear infinite;
+                  }
+
+                  .cyber-glitch-btn::before,
+                  .cyber-glitch-btn::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(45deg, 
+                      rgba(139, 92, 246, 0.5), 
+                      rgba(239, 68, 68, 0.5), 
+                      rgba(59, 130, 246, 0.5));
+                    z-index: -1;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                  }
+
+                  .cyber-glitch-btn::before {
+                    filter: blur(5px);
+                  }
+
+                  .cyber-glitch-btn:hover {
+                    background: linear-gradient(45deg, rgba(20, 18, 35, 0.8), rgba(40, 38, 70, 0.8));
+                    animation: border-flicker 0.5s linear infinite, text-flicker 0.5s linear infinite;
+                  }
+
+                  .cyber-glitch-btn:hover::before {
+                    opacity: 0.4;
+                  }
+
+                  .cyber-glitch-btn:hover::after {
+                    opacity: 1;
+                    animation: glitch 2s linear infinite;
+                  }
+                  
+                  /* Add scan lines for cyberpunk effect */
+                  .cyber-glitch-btn::after {
+                    background: repeating-linear-gradient(
+                      to bottom,
+                      transparent,
+                      transparent 2px,
+                      rgba(139, 92, 246, 0.1) 3px,
+                      rgba(139, 92, 246, 0.1) 4px
+                    );
+                    opacity: 0.2;
+                  }
+
+                  /* Every 4 seconds, make the button shake for a moment */
+                  @keyframes glitch-periodic {
+                    0%, 95%, 100% {
+                      transform: translate(0);
+                    }
+                    96% {
+                      transform: translate(-5px, 0);
+                    }
+                    97% {
+                      transform: translate(5px, 0);
+                    }
+                    98% {
+                      transform: translate(-3px, 0);
+                    }
+                    99% {
+                      transform: translate(3px, 0);
+                    }
+                  }
+
+                  .cyber-glitch-btn {
+                    animation: glitch-periodic 4s infinite, border-flicker 2s infinite;
+                  }
+                `}</style>
               </section>
 
               {/* Pools List Section */}
@@ -185,10 +396,18 @@ export default function PoolsPage() {
                         placeholder="Search pools..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        
                         className="w-full h-9 bg-gray-900/50 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
                       />
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshPools}
+                      disabled={refreshing}
+                      className="border-purple-500 text-purple-500 hover:bg-purple-500/20"
+                    >
+                      {refreshing ? 'Refreshing...' : 'Refresh Pools'}
+                    </Button>
                   </div>
                 </div>
                 
@@ -205,51 +424,121 @@ export default function PoolsPage() {
                     <table className="w-full text-left text-white">
                       <thead>
                         <tr className="border-b border-gray-700">
-                          <th className="py-4 px-6 font-medium text-gray-400">Pool</th>
+                          <th className="py-4 px-6 font-medium text-gray-400">Pool Information</th>
                           <th className="py-4 px-6 font-medium text-gray-400 cursor-pointer" onClick={() => setSortOption('liquidity')}>
                             Liquidity {sortOption === 'liquidity' && '↓'}
                           </th>
                           <th className="py-4 px-6 font-medium text-gray-400 cursor-pointer" onClick={() => setSortOption('volume')}>
                             Volume 24H {sortOption === 'volume' && '↓'}
                           </th>
-                          <th className="py-4 px-6 font-medium text-gray-400 cursor-pointer" onClick={() => setSortOption('fees')}>
-                            Fees 24H {sortOption === 'fees' && '↓'}
-                          </th>
-                          <th className="py-4 px-6 font-medium text-gray-400 cursor-pointer" onClick={() => setSortOption('apr')}>
-                            APR 24H {sortOption === 'apr' && '↓'}
-                          </th>
-                          <th className="py-4 px-6 font-medium text-gray-400">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredPools.map((pool) => (
-                          <tr key={pool.whirlpool_address} className="border-b border-gray-800 hover:bg-gray-800/30">
+                          <tr 
+                            key={pool.whirlpool_address} 
+                            className="border-b border-gray-800 hover:bg-gray-800/30 cursor-pointer" 
+                            onClick={() => window.location.href = `/pools/${pool.whirlpool_address}`}
+                          >
                             <td className="py-4 px-6">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                                  <span className="text-sm">💧</span>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-medium truncate max-w-[200px]">{pool.token_mint_a.slice(0, 4)}...{pool.token_mint_a.slice(-4)}</div>
-                                    <button 
-                                      onClick={() => copyToClipboard(pool.token_mint_a, `a-${pool.whirlpool_address}`)}
-                                      className="p-1 hover:bg-gray-700 rounded transition-colors"
-                                    >
-                                      {copiedStates[`a-${pool.whirlpool_address}`] ? (
-                                        <Check className="w-3 h-3 text-green-500" />
-                                      ) : (
-                                        <Copy className="w-3 h-3 text-gray-400" />
-                                      )}
-                                    </button>
+                              {/* Split Pool Information section */}
+                              <div className="flex items-start justify-between gap-4">
+                                {/* Left section: Token pair info */}
+                                <div className="flex flex-col gap-3">
+                                  {/* Pool Name/Pair */}
+                                  <div className="text-sm text-purple-400 font-bold">
+                                    {pool.token_a_symbol && pool.token_b_symbol 
+                                      ? `${pool.token_a_symbol}/${pool.token_b_symbol}`
+                                      : 'Token Pair'}
                                   </div>
+                                  
+                                  {/* Token info rows */}
+                                  <div className="flex flex-col gap-2">
+                                    {/* Token A with logo */}
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+                                        {pool.token_a_logo_uri ? (
+                                          <img 
+                                            src={pool.token_a_logo_uri} 
+                                            alt={pool.token_a_symbol || 'Token A'}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).src = "https://placehold.co/200x200/0f172a/f8fafc?text=?";
+                                            }}
+                                          />
+                                        ) : (
+                                          <span className="text-xs">?</span>
+                                        )}
+                                      </div>
+                                      <div className="font-medium truncate max-w-[180px]">
+                                        {pool.token_a_symbol ? `${pool.token_a_symbol} (${pool.token_mint_a.slice(0, 4)}...${pool.token_mint_a.slice(-4)})` : `${pool.token_mint_a.slice(0, 4)}...${pool.token_mint_a.slice(-4)}`}
+                                      </div>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(pool.token_mint_a, `a-${pool.whirlpool_address}`);
+                                        }}
+                                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                      >
+                                        {copiedStates[`a-${pool.whirlpool_address}`] ? (
+                                          <Check className="w-3 h-3 text-green-500" />
+                                        ) : (
+                                          <Copy className="w-3 h-3 text-gray-400" />
+                                        )}
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Token B with logo */}
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+                                        {pool.token_b_logo_uri ? (
+                                          <img 
+                                            src={pool.token_b_logo_uri} 
+                                            alt={pool.token_b_symbol || 'Token B'}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).src = "https://placehold.co/200x200/0f172a/f8fafc?text=?";
+                                            }}
+                                          />
+                                        ) : (
+                                          <span className="text-xs">?</span>
+                                        )}
+                                      </div>
+                                      <div className="text-sm text-gray-400 truncate max-w-[180px]">
+                                        {pool.token_b_symbol ? `${pool.token_b_symbol} (${pool.token_mint_b.slice(0, 4)}...${pool.token_mint_b.slice(-4)})` : `${pool.token_mint_b.slice(0, 4)}...${pool.token_mint_b.slice(-4)}`}
+                                      </div>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(pool.token_mint_b, `b-${pool.whirlpool_address}`);
+                                        }}
+                                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                      >
+                                        {copiedStates[`b-${pool.whirlpool_address}`] ? (
+                                          <Check className="w-3 h-3 text-green-500" />
+                                        ) : (
+                                          <Copy className="w-3 h-3 text-gray-400" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Right section: Whirlpool address */}
+                                <div className="flex flex-col items-end">
+                                  <div className="text-xs text-gray-500 mb-1">Whirlpool</div>
                                   <div className="flex items-center gap-2">
-                                    <div className="text-sm text-gray-400 truncate max-w-[200px]">{pool.token_mint_b.slice(0, 4)}...{pool.token_mint_b.slice(-4)}</div>
+                                    <div className="font-medium text-xs text-gray-300 truncate max-w-[120px]">
+                                      {pool.whirlpool_address.slice(0, 8)}...{pool.whirlpool_address.slice(-8)}
+                                    </div>
                                     <button 
-                                      onClick={() => copyToClipboard(pool.token_mint_b, `b-${pool.whirlpool_address}`)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyToClipboard(pool.whirlpool_address, `pool-${pool.whirlpool_address}`);
+                                      }}
                                       className="p-1 hover:bg-gray-700 rounded transition-colors"
                                     >
-                                      {copiedStates[`b-${pool.whirlpool_address}`] ? (
+                                      {copiedStates[`pool-${pool.whirlpool_address}`] ? (
                                         <Check className="w-3 h-3 text-green-500" />
                                       ) : (
                                         <Copy className="w-3 h-3 text-gray-400" />
@@ -261,22 +550,6 @@ export default function PoolsPage() {
                             </td>
                             <td className="py-4 px-6 font-medium">{pool.liquidity}</td>
                             <td className="py-4 px-6 font-medium">{pool.volume_24h}</td>
-                            <td className="py-4 px-6 font-medium">{pool.fees_24h}</td>
-                            <td className="py-4 px-6">
-                              <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full">
-                                {pool.apr_24h}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-purple-500 text-purple-500 hover:bg-purple-500/20"
-                                onClick={() => window.location.href = `/pools/${pool.whirlpool_address}`}
-                              >
-                                Deposit
-                              </Button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
 import axios from 'axios';
+import { themedToast } from '@/lib/toast';
 
 interface FormData {
   tokenMintA: string;
@@ -50,10 +51,10 @@ export default function PoolLaunchForm() {
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
       // TODO: Store the pool data in the database
-      toast.success('Pool created successfully!');
+      themedToast.success('Pool created successfully!');
     } catch (error: any) {
       console.log('error', error);
-      toast.error(error.message || 'Failed to create pool');
+      themedToast.error(error.message || 'Failed to create pool');
     } finally {
       setIsLoading(false);
     }

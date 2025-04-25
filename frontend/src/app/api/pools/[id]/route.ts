@@ -13,12 +13,8 @@ export async function GET(_: NextRequest, { params }: RouteParams) {
   try {
     const { id } = params;
     let pool;
-    
-    // First try to find by ID
-    pool = await pools.findById(id);
-    
     // If not found by ID, try to find by pool_address
-    if (!pool || pool.length === 0) {
+    if (!pool) {
       pool = await pools.findByPoolAddress(id);
     }
     

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { wallet } from '@/lib/orca';
@@ -14,7 +15,252 @@ import { Check, Copy } from "lucide-react";
 import axios from 'axios';
 import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
-import { toast } from 'sonner';
+import { themedToast } from '@/lib/toast';
+
+// TiltingBottle component for horizontal bottle UI that tilts based on token amounts
+interface TiltingBottleProps {
+  tokenAAmount: string;
+  tokenBAmount: string;
+  tokenASymbol: string;
+  tokenBSymbol: string;
+  onTokenAChange: (value: string) => void;
+  onTokenBChange: (value: string) => void;
+}
+
+function TiltingBottle({ 
+  tokenAAmount, 
+  tokenBAmount, 
+  tokenASymbol,
+  tokenBSymbol,
+  onTokenAChange, 
+  onTokenBChange 
+}: TiltingBottleProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [startAmounts, setStartAmounts] = useState<[string, string]>(['0', '0']);
+  
+  // Calculate token values for display
+  const tokenA = parseFloat(tokenAAmount) || 0;
+  const tokenB = parseFloat(tokenBAmount) || 0;
+  
+  // Calculate tilt based on token ratio
+  const calculateTilt = () => {
+    if (tokenA === 0 && tokenB === 0) return 0;
+    
+    // Tilt based on which token has more - negative for tokenA, positive for tokenB
+    const ratio = tokenB / (tokenA + tokenB);
+    return (ratio - 0.5) * 40; // -20 to +20 degrees
+  };
+
+  // Calculate fill percentages
+  const totalAmount = Math.max(tokenA + tokenB, 0.01);
+  const fillPercentageA = (tokenA / totalAmount) * 50; // max 50% of bottle
+  const fillPercentageB = (tokenB / totalAmount) * 50; // max 50% of bottle
+  
+  const tiltAngle = calculateTilt();
+  
+  // Handle the bottle drag
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.clientX);
+    setStartY(e.clientY);
+    setStartAmounts([tokenAAmount, tokenBAmount]);
+    e.preventDefault();
+  }, [tokenAAmount, tokenBAmount]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - startX;
+    const deltaY = startY - e.clientY; // Inverted Y for natural feel
+    
+    const xSensitivity = 0.05; // Adjust sensitivity as needed
+    const ySensitivity = 0.05;
+    
+    // Update token amounts based on drag
+    // Horizontal movement affects the relative ratio
+    // Vertical movement affects the total amount
+    
+    const startA = parseFloat(startAmounts[0]) || 0;
+    const startB = parseFloat(startAmounts[1]) || 0;
+    
+    let newAmountA = Math.max(0, startA + (deltaY * ySensitivity) - (deltaX * xSensitivity));
+    let newAmountB = Math.max(0, startB + (deltaY * ySensitivity) + (deltaX * xSensitivity));
+    
+    // Normalize so amounts don't get too large
+    if (newAmountA + newAmountB > 100) {
+      const scale = 100 / (newAmountA + newAmountB);
+      newAmountA *= scale;
+      newAmountB *= scale;
+    }
+    
+    onTokenAChange(newAmountA.toFixed(2));
+    onTokenBChange(newAmountB.toFixed(2));
+  }, [isDragging, startX, startY, startAmounts, onTokenAChange, onTokenBChange]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Set up event listeners
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  return (
+    <div className="flex flex-col items-center p-6 relative">
+      <div className="flex justify-between w-full mb-2">
+        <div className="text-sm text-white font-medium">
+          {tokenASymbol}: <span>{tokenA.toFixed(2)}</span>
+        </div>
+        <div className="text-sm text-white font-medium">
+          {tokenBSymbol}: <span>{tokenB.toFixed(2)}</span>
+        </div>
+      </div>
+      
+      {/* Bottle container with perspective */}
+      <div 
+        ref={containerRef}
+        className="relative w-full max-w-[400px] h-[180px] flex items-center justify-center perspective-800"
+      >
+        {/* Bottle with tilt transformation */}
+        <div 
+          className="relative w-[280px] h-[100px] transition-transform duration-300 cursor-move"
+          style={{ 
+            transform: `rotateZ(${tiltAngle}deg)`,
+          }}
+          onMouseDown={handleMouseDown}
+        >
+          {/* Glass container - rectangular with slight rounded corners */}
+          <div 
+            className="absolute inset-0 rounded-sm bg-transparent overflow-hidden"
+            style={{ 
+              transformStyle: 'preserve-3d',
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 0 10px rgba(255,255,255,0.05)'
+            }}
+          >
+            {/* Glass texture */}
+            <div 
+              className="absolute inset-[1px] rounded-sm overflow-hidden"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.03))',
+                backdropFilter: 'blur(5px)'
+              }}
+            >
+              {/* Rim highlight */}
+              <div className="absolute inset-x-0 top-0 h-[1px] bg-white opacity-50"></div>
+              
+              {/* Liquid container that stays horizontal regardless of bottle tilt */}
+              <div 
+                className="absolute inset-0 overflow-hidden" 
+                style={{ 
+                  transform: `rotateZ(${-tiltAngle}deg)`,
+                  transformOrigin: 'center' 
+                }}
+              >
+                {/* Token B Liquid (top layer) - blue */}
+                <div 
+                  className="absolute inset-x-0 bottom-0 transition-all duration-500 ease-out"
+                  style={{
+                    height: `${fillPercentageB}%`,
+                    background: 'linear-gradient(to top, #3b82f6, #60a5fa)',
+                    boxShadow: 'inset 0 0 15px rgba(255,255,255,0.3)'
+                  }}
+                >
+                  {/* Bubbles */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="bubble-sm absolute w-1 h-1 rounded-full bg-white opacity-70" 
+                         style={{ left: '20%', top: '60%', animation: 'bubble-horizontal 3s infinite ease-in' }}></div>
+                    <div className="bubble-sm absolute w-1.5 h-1.5 rounded-full bg-white opacity-50" 
+                         style={{ left: '70%', top: '30%', animation: 'bubble-horizontal 4s infinite ease-in 1s' }}></div>
+                  </div>
+                </div>
+                
+                {/* Token A Liquid (bottom layer) - purple */}
+                <div 
+                  className="absolute inset-x-0 bottom-0 transition-all duration-500 ease-out"
+                  style={{
+                    height: `${fillPercentageA}%`,
+                    background: 'linear-gradient(to top, #a855f7, #c084fc)',
+                    boxShadow: 'inset 0 0 15px rgba(255,255,255,0.3)'
+                  }}
+                >
+                  {/* Bubbles */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="bubble-sm absolute w-1 h-1 rounded-full bg-white opacity-70" 
+                         style={{ left: '35%', top: '40%', animation: 'bubble-horizontal 3.5s infinite ease-in 0.5s' }}></div>
+                    <div className="bubble-sm absolute w-1 h-1 rounded-full bg-white opacity-60" 
+                         style={{ left: '80%', top: '70%', animation: 'bubble-horizontal 3.2s infinite ease-in 1.5s' }}></div>
+                  </div>
+                </div>
+                
+                {/* Liquid surface highlight - interface between the two liquids */}
+                {tokenA > 0 && tokenB > 0 && (
+                  <div 
+                    className="absolute inset-x-0 h-[1px] bg-white opacity-40"
+                    style={{ 
+                      bottom: `${fillPercentageA}%`,
+                      boxShadow: '0 0 5px rgba(255,255,255,0.7)'
+                    }}
+                  ></div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Token indicators */}
+          <div className="absolute -left-8 top-1/4 transform -translate-y-1/2">
+            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
+              <span className="text-xs font-bold">{tokenASymbol[0]}</span>
+            </div>
+          </div>
+          
+          <div className="absolute -left-8 bottom-1/4 transform -translate-y-1/2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+              <span className="text-xs font-bold">{tokenBSymbol[0]}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-center text-sm text-gray-400 mt-4">
+        Drag the bottle to adjust token amounts
+      </div>
+    </div>
+  );
+}
+
+const GlobalStyles = () => {
+  return (
+    <style jsx global>{`
+      @keyframes bubble {
+        0% { transform: translateY(0) scale(1); opacity: 0.7; }
+        100% { transform: translateY(-120px) scale(1.5); opacity: 0; }
+      }
+      
+      @keyframes bubble-horizontal {
+        0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+        100% { transform: translate(-20px, -20px) scale(1.5); opacity: 0; }
+      }
+
+      .perspective-800 {
+        perspective: 800px;
+      }
+    `}</style>
+  );
+};
 
 interface PoolDetails {
   whirlpool_address: string;
@@ -94,7 +340,7 @@ export default function PoolDetailsPage() {
       const { tx, positionMint } = response.data;
       
       if (!tx) {
-        toast.error('No transaction received from server');
+        themedToast.error('No transaction received from server');
         return;
       }
 
@@ -110,23 +356,27 @@ export default function PoolDetailsPage() {
       setTokenAAmount('');
       setTokenBAmount('');
       
-      toast.success('Successfully added liquidity!');
+      themedToast.success('Successfully added liquidity!');
       
       // Optionally refresh pool data or navigate to the positions tab
       setActiveTab('positions');
 
     } catch (error: any) {
       console.error('Error adding liquidity:', error);
-      toast.error(error.message || 'Failed to add liquidity');
+      themedToast.error(error.message || 'Failed to add liquidity');
     } finally {
       setIsAddingLiquidity(false);
     }
   };
 
-  const handleRangeChange = (range: [number, number]) => {
-    setPriceRange(range);
-    setMinPrice(range[0].toString());
-    setMaxPrice(range[1].toString());
+  const handleMinPriceChange = (value: number) => {
+    setMinPrice(value.toString());
+    setPriceRange([value, parseFloat(maxPrice)]);
+  };
+  
+  const handleMaxPriceChange = (value: number) => {
+    setMaxPrice(value.toString());
+    setPriceRange([parseFloat(minPrice), value]);
   };
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -190,6 +440,7 @@ export default function PoolDetailsPage() {
 
   return (
     <div className="min-h-screen bg-black">
+      <GlobalStyles />
       <div className="relative p-8">
         {/* Background elements */}
         <div className="absolute inset-0 z-0">
@@ -215,7 +466,7 @@ export default function PoolDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Sidebar */}
             <div className="lg:col-span-4 space-y-6">
-              <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 text-white p-6">
+              <Card className="bg-transparent backdrop-blur-sm border border-gray-700 text-white p-6">
                 <h2 className="text-gray-400 text-sm mb-2">Total Value Locked</h2>
                 <p className="text-2xl font-bold">${pool?.tvl?.toLocaleString() || "0.00"}</p>
 
@@ -290,31 +541,11 @@ export default function PoolDetailsPage() {
                   </div>
                 </div>
               </Card>
-
-              {/* Trading Volume Chart */}
-              <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 text-white p-6">
-                <h3 className="text-gray-400 mb-2">Trading Volume</h3>
-                <p className="text-2xl font-bold mb-4">${pool?.trading_volume?.toLocaleString()}</p>
-                <div className="h-48 w-full bg-gray-800/50 rounded-lg relative overflow-hidden">
-                  {/* Example trading volume graph */}
-                  <div className="absolute inset-0 flex items-end p-2">
-                    {[...Array(24)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 bg-purple-500/50 mx-0.5 rounded-t"
-                        style={{
-                          height: `${Math.random() * 80 + 20}%`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </Card>
             </div>
 
             {/* Right Content */}
             <div className="lg:col-span-8">
-              <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 text-white p-6">
+              <Card className="bg-transparent backdrop-blur-sm border border-gray-700 text-white p-6">
                 {/* Tabs */}
                 <div className="flex rounded-lg overflow-hidden border border-gray-700 mb-6">
                   <button
@@ -464,7 +695,7 @@ export default function PoolDetailsPage() {
                 ) : (
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                      <h3>Enter deposit amount:</h3>
+                      <h3 className="text-lg font-medium">Add liquidity to pool</h3>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-400">Auto-Fill</span>
                         <Switch
@@ -475,6 +706,7 @@ export default function PoolDetailsPage() {
                       </div>
                     </div>
 
+                    {/* Token Input Fields */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -492,8 +724,18 @@ export default function PoolDetailsPage() {
                           placeholder="0.00"
                         />
                         <div className="flex justify-between mt-1">
-                          <button className="text-sm text-gray-400 hover:text-white">50%</button>
-                          <button className="text-sm text-gray-400 hover:text-white">MAX</button>
+                          <button 
+                            className="text-sm text-gray-400 hover:text-white"
+                            onClick={() => setTokenAAmount((parseFloat(tokenAAmount) || 0) > 0 ? (parseFloat(tokenAAmount) / 2).toString() : "0")}
+                          >
+                            50%
+                          </button>
+                          <button 
+                            className="text-sm text-gray-400 hover:text-white"
+                            onClick={() => setTokenAAmount("20")}
+                          >
+                            MAX
+                          </button>
                         </div>
                       </div>
                       <div>
@@ -512,133 +754,37 @@ export default function PoolDetailsPage() {
                           placeholder="0.00"
                         />
                         <div className="flex justify-between mt-1">
-                          <button className="text-sm text-gray-400 hover:text-white">50%</button>
-                          <button className="text-sm text-gray-400 hover:text-white">MAX</button>
+                          <button 
+                            className="text-sm text-gray-400 hover:text-white"
+                            onClick={() => setTokenBAmount((parseFloat(tokenBAmount) || 0) > 0 ? (parseFloat(tokenBAmount) / 2).toString() : "0")}
+                          >
+                            50%
+                          </button>
+                          <button 
+                            className="text-sm text-gray-400 hover:text-white"
+                            onClick={() => setTokenBAmount("20")}
+                          >
+                            MAX
+                          </button>
                         </div>
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="mb-4">Select Range Type</h3>
-                      <div className="flex rounded-lg overflow-hidden border border-gray-700 mb-6">
-                        <button
-                          className={`flex-1 px-4 py-2 ${
-                            selectedTab === 'full'
-                              ? 'bg-purple-500/20 text-purple-400'
-                              : 'bg-gray-800/50 hover:bg-gray-700/50'
-                          }`}
-                          onClick={() => setSelectedTab('full')}
-                        >
-                          Full Range
-                        </button>
-                        <button
-                          className={`flex-1 px-4 py-2 ${
-                            selectedTab === 'custom'
-                              ? 'bg-purple-500/20 text-purple-400'
-                              : 'bg-gray-800/50 hover:bg-gray-700/50'
-                          }`}
-                          onClick={() => setSelectedTab('custom')}
-                        >
-                          Custom Range
-                        </button>
-                      </div>
-
-                      {selectedTab === 'full' ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-gray-400">Min Price</Label>
-                              <Input
-                                type="number"
-                                value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value)}
-                                className="bg-gray-800 border-gray-700 text-white mt-2"
-                                placeholder="0.00"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-gray-400">Max Price</Label>
-                              <Input
-                                type="number"
-                                value={maxPrice}
-                                onChange={(e) => setMaxPrice(e.target.value)}
-                                className="bg-gray-800 border-gray-700 text-white mt-2"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="h-64 bg-gray-800/50 rounded-lg p-4 relative">
-                            {/* Price Range Graph */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-full h-32 relative">
-                                {/* Current Price Line */}
-                                <div 
-                                  className="absolute top-0 bottom-0 w-0.5 bg-white"
-                                  style={{ left: `${((currentPrice - 6) / (10 - 6)) * 100}%` }}
-                                >
-                                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-sm">
-                                    Current Price
-                                    <div className="text-xs text-gray-400">{currentPrice}</div>
-                                  </div>
-                                </div>
-
-                                {/* Selected Range */}
-                                <div 
-                                  className="absolute top-0 bottom-0 bg-purple-500/20"
-                                  style={{
-                                    left: `${((priceRange[0] - 6) / (10 - 6)) * 100}%`,
-                                    width: `${((priceRange[1] - priceRange[0]) / (10 - 6)) * 100}%`
-                                  }}
-                                />
-
-                                {/* Range Handles */}
-                                <div 
-                                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-purple-500 rounded-full cursor-pointer"
-                                  style={{ left: `${((priceRange[0] - 6) / (10 - 6)) * 100}%` }}
-                                  // Add drag handling here
-                                />
-                                <div 
-                                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-purple-500 rounded-full cursor-pointer"
-                                  style={{ left: `${((priceRange[1] - 6) / (10 - 6)) * 100}%` }}
-                                  // Add drag handling here
-                                />
-                              </div>
-                            </div>
-
-                            {/* Price Labels */}
-                            <div className="absolute bottom-4 left-0 right-0 flex justify-between text-sm text-gray-400">
-                              <span>6.00</span>
-                              <span>10.00</span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
-                              <Label className="text-gray-400">Min Price</Label>
-                              <p className="text-xl">{priceRange[0].toFixed(6)}</p>
-                              <p className="text-red-500">-15.60%</p>
-                            </div>
-                            <div>
-                              <Label className="text-gray-400">Current</Label>
-                              <p className="text-xl">{currentPrice}</p>
-                              <p className="text-gray-400">Market Price</p>
-                            </div>
-                            <div>
-                              <Label className="text-gray-400">Max Price</Label>
-                              <p className="text-xl">{priceRange[1].toFixed(6)}</p>
-                              <p className="text-green-500">+18.48%</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    {/* Interactive Bottle UI */}
+                    <div className="mt-8">
+                      <TiltingBottle
+                        tokenAAmount={tokenAAmount}
+                        tokenBAmount={tokenBAmount}
+                        tokenASymbol={pool?.token_a_symbol || 'Token A'}
+                        tokenBSymbol={pool?.token_b_symbol || 'Token B'}
+                        onTokenAChange={setTokenAAmount}
+                        onTokenBChange={setTokenBAmount}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
-                        <span>SOL needed to create 1 positions:</span>
+                        <span>SOL needed to create position:</span>
                         <span className="text-purple-400">0.05656552 SOL</span>
                         <Button variant="link" size="sm" className="text-gray-400">
                           Show cost details
@@ -652,7 +798,7 @@ export default function PoolDetailsPage() {
 
                     <Button
                       onClick={handleAddLiquidity}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
                       disabled={!connected || isAddingLiquidity}
                     >
                       {isAddingLiquidity ? 'Adding Liquidity...' : 'Add Liquidity'}

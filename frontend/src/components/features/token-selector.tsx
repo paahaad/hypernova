@@ -11,7 +11,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { connection } from "@/lib/anchor";
 import { ExternalLink, Copy, Check } from "lucide-react";
-import { toast } from "sonner";
+import { themedToast } from '@/lib/toast';
 
 interface TokenSelectorProps {
   isOpen: boolean;
@@ -107,7 +107,7 @@ export function TokenSelector({ isOpen, onClose, onSelect, tokens, selectedToken
     e.stopPropagation();
     navigator.clipboard.writeText(address);
     setCopiedTokenAddress(address);
-    toast.success("Address copied to clipboard");
+    themedToast.success("Address copied to clipboard");
     setTimeout(() => setCopiedTokenAddress(null), 2000);
   };
 

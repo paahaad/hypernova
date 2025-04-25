@@ -4,7 +4,6 @@ import React from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { Toaster } from "sonner";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,7 +17,6 @@ export default function Layout({ children }: LayoutProps) {
         <Header />
         <main>{children}</main>
         {/* <Footer /> */}
-        <Toaster richColors position="top-center" />
       </div>
 
       {/* Global styles for retro effects */}
