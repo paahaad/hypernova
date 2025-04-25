@@ -402,7 +402,10 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
       {/* Date display that acts as trigger */}
       <div 
         className="bg-gray-800/50 border border-gray-700 rounded-md p-2 cursor-pointer flex items-center justify-between"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.preventDefault(); // Prevent any form submission
+          setIsOpen(!isOpen);
+        }}
       >
         <div className="text-white font-medium">
           {selectedDate.toLocaleString('en-US', { 
@@ -457,6 +460,7 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
                   max="24"
                   value={currentHours}
                   onChange={(e) => {
+                    e.preventDefault();
                     let value = parseInt(e.target.value) || 0;
                     if (value > 24) value = 24;
                     handleTimeChange('hours', value);
@@ -474,6 +478,7 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
                   max="60"
                   value={currentMinutes}
                   onChange={(e) => {
+                    e.preventDefault();
                     let value = parseInt(e.target.value) || 0;
                     if (value > 60) value = 60;
                     handleTimeChange('minutes', value);
@@ -490,7 +495,10 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
             {/* Month navigation */}
             <div className="flex justify-between items-center mb-3">
               <button 
-                onClick={handlePrevMonth}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePrevMonth();
+                }}
                 className="flex items-center px-2 py-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors text-sm"
               >
                 ← Prev
@@ -499,7 +507,10 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
                 {getMonthName(viewDate)} {viewDate.getFullYear()}
               </h3>
               <button 
-                onClick={handleNextMonth}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNextMonth();
+                }}
                 className="flex items-center px-2 py-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors text-sm"
               >
                 Next →
@@ -525,7 +536,10 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
                     ref={isToday ? todayRef : null}
                   >
                     <button
-                      onClick={() => !isDisabled && handleDateClick(date)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        !isDisabled && handleDateClick(date);
+                      }}
                       disabled={isDisabled}
                       className={`
                         w-14 h-16 mx-1 flex flex-col items-center justify-center rounded-lg
@@ -559,7 +573,10 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
             <button
               className="mt-3 w-full py-1.5 bg-gradient-to-r from-purple-600/70 to-purple-500/70 hover:from-purple-600/90 hover:to-purple-500/90 text-white text-sm rounded transition-colors shadow-md font-medium"
               style={{ boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)' }}
-              onClick={() => setIsOpen(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                setIsOpen(false);
+              }}
             >
               Done
             </button>
@@ -809,6 +826,23 @@ export default function TokenLaunchForm() {
       themedToast.error('Please select an end time');
       return;
     }
+    
+    // Check wallet network before proceeding
+    try {
+      // Try to get the latest blockhash to verify connection
+      const { blockhash } = await connection.getLatestBlockhash('confirmed');
+      console.log('Connected to network with blockhash:', blockhash);
+      
+      if (process.env.NEXT_PUBLIC_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_USE_MAINNET === 'true') {
+        themedToast.info('Using mainnet network for transaction');
+      } else {
+        themedToast.info('Using devnet/testnet for transaction');
+      }
+    } catch (networkError) {
+      console.error('Network connection error:', networkError);
+      themedToast.error('Network connection error. Please check that your wallet is on the correct network.');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -835,15 +869,6 @@ export default function TokenLaunchForm() {
       // Save the metadata URL
       setFinalUri(metadataUrl);
 
-      // First create token
-      const token = await HypernovaApi.tokens.create({
-        mint_address: publicKey.toString(), // This is temporary, will be updated with the actual mint
-        symbol: formData.ticker,
-        name: formData.name,
-        decimals: 9, // Default for Solana SPL tokens
-        logo_uri: imageUrl
-      });
-
       // Now create presale using the token
       const response = await fetch('/api/presale', {
         method: 'POST',
@@ -854,6 +879,7 @@ export default function TokenLaunchForm() {
           name: formData.name,
           symbol: formData.ticker,
           uri: metadataUrl,
+          imageURI: imageUrl,
           description: formData.description,
           totalSupply: parseInt(formData.totalSupply),
           presaleAmount: formData.presaleAmount * 1e9,
@@ -862,7 +888,7 @@ export default function TokenLaunchForm() {
           minPurchase: parseFloat(formData.minPurchase),
           maxPurchase: parseFloat(formData.maxPurchase),
           presalePercentage: 100 - formData.presalePercentage - 20,
-          endTime: Math.floor(new Date(formData.endTime).getTime() / 1000),
+          endTime: Math.floor(selectedDate.getTime() / 1000),
           userAddress: publicKey.toString(),
         }),
       });
@@ -872,33 +898,59 @@ export default function TokenLaunchForm() {
       if (!data.success) {
         throw new Error(data.error || 'Failed to create token');
       }
-
-      // Get the token ID from created token response
-      console.log('Created token:', token);
       
-      // Extract the token ID - assuming token contains the ID as a string or has an id property
-      const tokenId = typeof token === 'string' ? token : (token as any).id;
-      
-      // Create presale in database 
-      await HypernovaApi.presales.create({
-        token_id: tokenId,
-        presale_address: data.presaleAddress || 'pending_address',
-        total_raised: 0,
-        target_amount: formData.presaleAmount,
-        start_time: new Date().toISOString(),
-        end_time: formData.endTime,
-        status: 'active'
-      });
-
-      const tx = data.tx;
-      const txData = Transaction.from(Buffer.from(tx, 'base64'));
+      // Validate response before proceeding
+      if (!data.tx) {
+        throw new Error('No transaction data received from server');
+      }
       
       // Sign and send transaction using wallet adapter
-      const signature = await sendTransaction(txData, connection);
-      console.log('signature', signature);
-
-      themedToast.success('Token created successfully!');
-      // Reset form or redirect
+      const tx = data.tx;
+      console.log('Received base64 tx:', tx.substring(0, 50) + '...');
+      
+      // Create a fresh transaction from the serialized data
+      const buffer = Buffer.from(tx, 'base64');
+      console.log('Buffer length:', buffer.length);
+      
+      // Deserialize with proper options
+      const txData = Transaction.from(buffer);
+      console.log('Transaction instructions count:', txData.instructions.length);
+      
+      // We don't need to set these again as they're already set on the server
+      // but setting them again ensures we have the latest values
+      const { blockhash } = await connection.getLatestBlockhash('confirmed');
+      txData.recentBlockhash = blockhash;
+      txData.feePayer = publicKey;
+      
+      // Ensure transaction is fully prepared before sending
+      if (!txData.recentBlockhash) {
+        console.error('Transaction missing recentBlockhash');
+        throw new Error('Transaction not properly prepared: missing recentBlockhash');
+      }
+      
+      if (!txData.feePayer) {
+        console.error('Transaction missing feePayer');
+        throw new Error('Transaction not properly prepared: missing feePayer');
+      }
+      
+      console.log('Transaction data:', txData);
+      console.log('Transaction ready to send with feePayer:', publicKey.toString());
+      
+      try {
+        // Sign and send transaction using wallet adapter with skipPreflight option
+        console.log('Sending transaction...');
+        const signature = await sendTransaction(txData, connection, {
+          skipPreflight: true,
+          preflightCommitment: 'confirmed',
+          maxRetries: 3
+        });
+        console.log('signature', signature);
+        themedToast.success('Token created successfully!');
+      } catch (txError: any) {
+        console.error('Transaction error details:', txError);
+        // Re-throw to be caught by the outer try-catch
+        throw txError;
+      }
     } catch (error: any) {
       console.error('Error creating token:', error);
       themedToast.error(error.message || 'Failed to create token');

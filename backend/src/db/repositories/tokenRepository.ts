@@ -28,6 +28,13 @@ export const tokenRepository = {
   },
 
   /**
+   * Find all tokens
+   */
+  async findAll() {
+    return db.query.tb_tokens.findMany();
+  },
+
+  /**
    * Ensure token exists, creating it if it doesn't
    */
   async ensureToken(tokenData: Token) {

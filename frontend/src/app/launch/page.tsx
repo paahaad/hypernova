@@ -31,10 +31,8 @@ interface Presale {
   user_address: string;
   mint_address: string;
   presale_address: string;
-  metadata?: {
-    image?: string;
-  };
-}
+  imageURI: string;
+  }
 
 type SortOption = 'newest' | 'oldest' | 'highest-percentage' | 'lowest-percentage' | 'highest-price' | 'lowest-price';
 
@@ -658,9 +656,9 @@ export default function LaunchPage() {
                               ? "bg-gradient-to-r from-purple-600 to-pink-600" 
                               : "bg-gradient-to-r from-purple-600 to-pink-600"
                           }`}>
-                            {presale.metadata && presale.metadata.image ? (
+                            {presale?.imageURI ? (
                               <img 
-                                src={presale.metadata.image} 
+                                src={presale.imageURI} 
                                 alt={presale.name || "Token image"} 
                                 className="w-full h-full object-cover rounded-lg" 
                                 onError={(e) => {
