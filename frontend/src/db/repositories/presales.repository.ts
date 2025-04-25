@@ -89,6 +89,7 @@ export class PresalesRepository extends BaseRepository {
     target_amount?: number;
     start_time?: Date;
     status?: string;
+    imageURI?: string;
   }) {
     // Make sure token_id doesn't have the hyp_ prefix if it exists
     const cleanedData = { ...data };

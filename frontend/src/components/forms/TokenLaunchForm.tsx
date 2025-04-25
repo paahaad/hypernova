@@ -10,7 +10,7 @@ import { Transaction } from '@solana/web3.js';
 import { connection } from '@/lib/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { HypernovaApi } from '@/lib/api-client';
-import { Upload, ImageIcon } from 'lucide-react';
+import { Upload, ImageIcon, Loader2 } from 'lucide-react';
 import { themedToast } from '@/lib/toast';
 
 // CylinderSlider component for 3D slider controls
@@ -673,9 +673,12 @@ const GlobalStyles = () => {
   );
 };
 
+type UploadStatus = 'idle' | 'uploading_image' | 'uploading_metadata' | 'creating_token' | 'signing_transaction' | 'complete' | 'error';
+
 export default function TokenLaunchForm() {
   const { publicKey, signTransaction, sendTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [finalUri, setFinalUri] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -807,6 +810,24 @@ export default function TokenLaunchForm() {
     }
   };
 
+  const getButtonText = () => {
+    if (!connected) return 'Connect Your Wallet to Continue';
+    if (!isLoading) return 'Launch Token';
+    
+    switch (uploadStatus) {
+      case 'uploading_image':
+        return 'Uploading Image...';
+      case 'uploading_metadata':
+        return 'Creating Metadata...';
+      case 'creating_token':
+        return 'Creating Token...';
+      case 'signing_transaction':
+        return 'Waiting for Signature...';
+      default:
+        return 'Processing...';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowValidation(true);
@@ -845,11 +866,13 @@ export default function TokenLaunchForm() {
     }
 
     setIsLoading(true);
+    setUploadStatus('uploading_image');
     try {
       // Upload image to Pinata
       const imageUrl = await uploadToPinata(formData.image);
       
       // Create metadata object
+      setUploadStatus('uploading_metadata');
       const metadata = {
         name: formData.name,
         symbol: formData.ticker,
@@ -870,6 +893,7 @@ export default function TokenLaunchForm() {
       setFinalUri(metadataUrl);
 
       // Now create presale using the token
+      setUploadStatus('creating_token');
       const response = await fetch('/api/presale', {
         method: 'POST',
         headers: {
@@ -938,6 +962,7 @@ export default function TokenLaunchForm() {
       
       try {
         // Sign and send transaction using wallet adapter with skipPreflight option
+        setUploadStatus('signing_transaction');
         console.log('Sending transaction...');
         const signature = await sendTransaction(txData, connection, {
           skipPreflight: true,
@@ -945,6 +970,7 @@ export default function TokenLaunchForm() {
           maxRetries: 3
         });
         console.log('signature', signature);
+        setUploadStatus('complete');
         themedToast.success('Token created successfully!');
       } catch (txError: any) {
         console.error('Transaction error details:', txError);
@@ -952,10 +978,15 @@ export default function TokenLaunchForm() {
         throw txError;
       }
     } catch (error: any) {
+      setUploadStatus('error');
       console.error('Error creating token:', error);
       themedToast.error(error.message || 'Failed to create token');
     } finally {
-      setIsLoading(false);
+      // Keep isLoading true only if we're in a success state to show success message
+      if (uploadStatus !== 'complete') {
+        setIsLoading(false);
+        setUploadStatus('idle');
+      }
     }
   };
 
@@ -1129,12 +1160,8 @@ export default function TokenLaunchForm() {
           className="w-full bg-green-500 hover:bg-green-600 text-white py-6 text-lg"
           disabled={isLoading || !connected}
         >
-          {!connected 
-            ? 'Connect Your Wallet to Continue'
-            : isLoading 
-              ? 'Creating Token...' 
-              : 'Launch Token'
-          }
+          {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+          {getButtonText()}
         </Button>
       </form>
     </div>

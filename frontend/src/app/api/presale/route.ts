@@ -29,6 +29,7 @@ interface PresaleInput {
   presalePercentage: number;
   endTime: number;
   userAddress: string;
+  imageURI: string;
 }
 
 export async function GET(req: Request) {
@@ -78,7 +79,8 @@ export async function POST(req: Request) {
       !body.presaleAmount ||
       !body.presalePercentage ||
       !body.endTime ||
-      !body.userAddress
+      !body.userAddress ||
+      !body.imageURI
     ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
@@ -155,7 +157,7 @@ export async function POST(req: Request) {
       symbol: body.symbol,
       name: body.name,
       decimals: 9, // Assuming 9 decimals as standard for Solana SPL tokens
-      logo_uri: body.uri
+      logo_uri: body?.imageURI
     });
     
     if (!newToken || newToken.length === 0) {
@@ -174,6 +176,7 @@ export async function POST(req: Request) {
       uri: body.uri,
       description: body.description,
       total_supply: body.totalSupply,
+      imageURI: body?.imageURI as string,
       // ticker as u64 / (total_supply * presale_percentage as u64 / 100);
       token_price: body.tokenPrice,
       min_purchase: body.minPurchase,
