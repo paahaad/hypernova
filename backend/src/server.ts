@@ -7,7 +7,7 @@ import swap from './functions/pools/swap';
 import createPool from './functions/pools/createPool';
 import addLP from './functions/pools/addLP';
 import removeLP from './functions/pools/removeLP';
-import { ctx, config, configExtension } from './client';
+import { ctx, config, configExtension, whirlpoolClient } from './client';
 import { envPORT } from './env';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -17,6 +17,10 @@ import { swapRepository } from './db/repositories/swapRepository';
 import { liquidityRepository } from './db/repositories/liquidityRepository';
 import { tokenRepository } from './db/repositories/tokenRepository';
 import { transactionRepository } from './db/repositories/transactionRepository';
+import { swapQuoteByInputToken } from '@orca-so/whirlpools-sdk';
+import { Percentage } from '@orca-so/common-sdk';
+import { BN } from '@coral-xyz/anchor';
+import { Decimal } from 'decimal.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Load environment variables
@@ -598,5 +602,98 @@ async function getTokenPairVolatility(tokenAAddress: string, tokenBAddress: stri
     
     return 'volatile';
 }
+
+/**
+ * @swagger
+ * /quote:
+ *   post:
+ *     summary: Get a quote for swapping between two tokens
+ *     tags: [Quote]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tokenMint
+ *               - inputTokenAmount
+ *               - aToB
+ *             properties:
+ *               tokenMint:
+ *                 type: string
+ *                 description: The mint address of the input token
+ *               inputTokenAmount:
+ *                 type: number
+ *                 description: Amount of input tokens to swap
+ *               aToB:
+ *                 type: boolean
+ *                 description: Direction of swap (true for A→B, false for B→A)
+ *     responses:
+ *       200:
+ *         description: Quote retrieved successfully
+ */
+app.post('/quote', async (req, res) => {
+    try {
+        const { tokenMint, inputTokenAmount, aToB } = req.body;
+
+        console.log("Config address:", config.toString());
+        
+        // Get all pools from the program
+        const allPools = await ctx.program.account.whirlpool.all();
+        console.log("All pools found:", allPools.length);
+        allPools.forEach(pool => {
+            console.log("Pool address:", pool.publicKey.toString());
+            console.log("Pool data:", pool.account);
+        });
+
+        // Try to get the specific whirlpool
+        const whirlpool = await whirlpoolClient.getPool(config);
+        console.log("Attempting to get whirlpool at address:", config.toString());
+        
+        if (!whirlpool) {
+            throw new Error("Whirlpool not found");
+        }
+        console.log("Whirlpool found:", {
+            address: whirlpool.getAddress().toString(),
+            tokenA: whirlpool.getTokenAInfo(),
+            tokenB: whirlpool.getTokenBInfo()
+        });
+
+        const quote = await swapQuoteByInputToken(
+            whirlpool,
+            new BN(inputTokenAmount),
+            new PublicKey(tokenMint),
+            Percentage.fromFraction(1, 100), // 1% slippage tolerance
+            ctx.program.programId,
+            ctx.fetcher,
+            { maxAge: 0 } // refresh options - maxAge 0 means always refresh
+        );
+
+        // Get token information from the whirlpool
+        const tokenAInfo = whirlpool.getTokenAInfo();
+        const tokenBInfo = whirlpool.getTokenBInfo();
+        const isTokenA = tokenAInfo.mint.toString() === tokenMint;
+
+        console.log("tokenAInfo", tokenAInfo, tokenBInfo);
+
+        res.json({
+            estimatedAmountOut: quote.estimatedAmountOut.toNumber(),
+            estimatedFee: quote.estimatedFeeAmount.toNumber(),
+            tokenIn: {
+                mint: tokenMint,
+                decimals: isTokenA ? tokenAInfo.decimals : tokenBInfo.decimals
+            },
+            tokenOut: {
+                mint: isTokenA ? tokenBInfo.mint.toString() : tokenAInfo.mint.toString(),
+                decimals: isTokenA ? tokenBInfo.decimals : tokenAInfo.decimals
+            },
+            sqrtPrice: quote.estimatedEndSqrtPrice.toString()
+        });
+    } catch (error) {
+        console.error("Error getting quote:", error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+});
 
 startServer(); 
