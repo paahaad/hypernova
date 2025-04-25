@@ -12,6 +12,7 @@ export const tb_tokens = pgTable('tb_tokens', {
   name: text('name').notNull(),
   decimals: integer('decimals').notNull(),
   logo_uri: text('logo_uri'),
+  presaleCompleted: boolean('presaleCompleted').default(false),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()
 });
@@ -31,6 +32,7 @@ export const tb_presales = pgTable('tb_presales', {
   name: text('name'),
   symbol: text('symbol'),
   uri: text('uri'),
+  imageURI: text('imageURI'),
   description: text('description'),
   total_supply: numeric('total_supply'),
   token_price: numeric('token_price'),
@@ -68,6 +70,8 @@ export const tb_pools = pgTable('tb_pools', {
   pool_address: text('pool_address').unique().notNull(),
   token_a_id: uuid('token_a_id').references(() => tb_tokens.id),
   token_b_id: uuid('token_b_id').references(() => tb_tokens.id),
+  tokenA_mint_address: text('tokenA_mint_address').notNull(),
+  tokenB_mint_address: text('tokenB_mint_address').notNull(),
   lp_mint: text('lp_mint').notNull(),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()

@@ -274,6 +274,8 @@ app.post('/pool', async (req, res) => {
         // Insert new pool record
         await poolRepository.create({
             pool_address: result.whirlpoolAddress.toString(),
+            tokenA_mint_address: tokenMintA,
+            tokenB_mint_address: tokenMintB,
             token_a_id: tokenA?.id,
             token_b_id: tokenB?.id,
             lp_mint: 'pending' // LP mint might not be available immediately

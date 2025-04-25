@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    const requiredFields = ['token_id', 'presale_address', 'total_raised', 'target_amount', 'start_time', 'end_time'];
+    const requiredFields = ['presale_address', 'target_amount', 'start_time', 'end_time'];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -31,32 +31,36 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Check if token exists
-    const token = await tokens.findById(body.token_id);
-    if (!token || token.length === 0) {
-      return NextResponse.json(
-        { error: 'Token not found' },
-        { status: 404 }
-      );
+    // If mint_address is provided, check if token exists
+    if (body.mint_address) {
+      const token = await tokens.findByMintAddress(body.mint_address);
+      if (!token || token.length === 0) {
+        console.log('Token not found, will be created later');
+      }
     }
     
     // Check if presale with this address already exists
-    const existingPresale = await presales.findByTokenId(body.token_id);
+    const existingPresale = await presales.findByPresaleAddress(body.presale_address);
     if (existingPresale && existingPresale.length > 0) {
       return NextResponse.json(
-        { error: 'Presale for this token already exists' },
+        { error: 'Presale with this address already exists' },
         { status: 409 }
       );
     }
     
+    // Ensure total_raised is included and defaulted to 0 if not provided
+    if (body.total_raised === undefined) {
+      body.total_raised = 0;
+    }
+    
     // Create the presale
     const newPresale = await presales.create({
-      token_id: body.token_id,
+      mint_address: body.mint_address,
       presale_address: body.presale_address,
       total_raised: body.total_raised,
       target_amount: body.target_amount,
-      start_time: new Date(body.start_time),
-      end_time: new Date(body.end_time),
+      start_time: body.start_time,
+      end_time: body.end_time,
       status: body.status || 'active'
     });
     

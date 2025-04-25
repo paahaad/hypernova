@@ -16,13 +16,15 @@ type TokenData = {
 };
 
 type PresaleData = {
-  token_id: string;
+  token_id?: string;
+  mint_address?: string;
   presale_address: string;
   total_raised: number;
   target_amount: number;
   start_time: string | Date;
   end_time: string | Date;
   status?: 'active' | 'completed' | 'cancelled';
+  imageURI?: string;
 };
 
 type PoolData = {
@@ -70,6 +72,7 @@ async function apiRequest<T>(
   };
 
   if (data) {
+    console.log(`API Request to ${url}:`, JSON.stringify(data));
     options.body = JSON.stringify(data);
   }
 
@@ -77,6 +80,7 @@ async function apiRequest<T>(
   const result = await response.json();
 
   if (!response.ok) {
+    console.error(`API Error from ${url}:`, result);
     throw new Error(result.error || 'An error occurred');
   }
 

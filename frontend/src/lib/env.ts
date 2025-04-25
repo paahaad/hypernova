@@ -29,4 +29,12 @@ export const envRPC_URL = envNEXT_PUBLIC_USE_MAINNET ? envMAINNET_RPC_URL : envT
 export const envPINATA_API_KEY = process.env.PINATA_API_KEY || '';
 export const envPINATA_API_SECRET = process.env.PINATA_API_SECRET || '';
 export const envPINATA_JWT = process.env.PINATA_JWT || '';
-export const envNEXT_PUBLIC_GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || ''; 
+export const envNEXT_PUBLIC_GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
+
+// Mock environment variables for running migrations
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Add other environment variables as needed 

@@ -4,6 +4,8 @@ import { tb_pools, tb_tokens } from '../schema';
 
 export interface Pool {
   pool_address: string;
+  tokenA_mint_address: string;
+  tokenB_mint_address: string;
   token_a_id?: string;
   token_b_id?: string;
   lp_mint: string;

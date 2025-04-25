@@ -83,12 +83,13 @@ export class PresalesRepository extends BaseRepository {
     end_time?: number;
     user_address?: string;
     finalized?: boolean;
-    id?: number;
+    id?: string;
     token_id?: string;
     total_raised?: number;
     target_amount?: number;
     start_time?: Date;
     status?: string;
+    imageURI?: string;
   }) {
     // Make sure token_id doesn't have the hyp_ prefix if it exists
     const cleanedData = { ...data };
@@ -98,10 +99,22 @@ export class PresalesRepository extends BaseRepository {
     
     // Convert end_time from timestamp to Date if provided
     if (cleanedData.end_time) {
-      cleanedData.end_time = new Date(cleanedData.end_time * 1000);
+      // Keep the original end_time value
+      const timestamp = cleanedData.end_time;
+      // Remove it from the cleanedData object
+      delete cleanedData.end_time;
+      
+      // Use type assertion to help TypeScript understand the structure
+      const dbValues = {
+        ...cleanedData,
+        end_time: new Date(timestamp * 1000)
+      };
+      
+      const newPresales = await this.db.insert(tb_presales).values(dbValues as any).returning();
+      return transformDatabaseResults(newPresales);
     }
-    
-    const newPresales = await this.db.insert(tb_presales).values(cleanedData).returning();
+
+    const newPresales = await this.db.insert(tb_presales).values(cleanedData as any).returning();
     return transformDatabaseResults(newPresales);
   }
 

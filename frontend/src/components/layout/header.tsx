@@ -105,6 +105,12 @@ export function Header() {
             >
               Launch
             </Link>
+            <Link
+              href="/tokens"
+              className="text-base font-medium text-gray-200 hover:text-white transition-colors px-4"
+            >
+              Tokens
+            </Link>
           </nav>
 
           {/* Action Buttons */}
@@ -189,6 +195,12 @@ export function Header() {
                 className="text-base font-medium text-gray-200 hover:text-white transition-colors py-2"
               >
                 Launch
+              </Link>
+              <Link
+                href="/tokens"
+                className="text-base font-medium text-gray-200 hover:text-white transition-colors py-2"
+              >
+                Tokens
               </Link>
               {connected && (
                 <Button 

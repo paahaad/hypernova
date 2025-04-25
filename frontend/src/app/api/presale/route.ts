@@ -12,7 +12,9 @@ import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
-import { presales } from "@/db/repositories";
+import { presales, tokens } from "@/db/repositories";
+import { randomUUID } from 'crypto';
+import { getRpcEndpoint } from "@/config/rpc";
 
 interface PresaleInput {
   name: string;
@@ -27,36 +29,14 @@ interface PresaleInput {
   presalePercentage: number;
   endTime: number;
   userAddress: string;
+  imageURI: string;
 }
 
 export async function GET(req: Request) {
   try {
     const allPresales = await presales.findAll();
-
-    // Fetch metadata from URI for each presale
-    const presalesWithImages = await Promise.all(
-      allPresales.map(async (presale) => {
-        try {
-          if (presale.uri) {
-            const response = await fetch(presale.uri);
-            const metadata = await response.json();
-            return {
-              ...presale,
-              metadata,
-            };
-          }
-          return presale;
-        } catch (error) {
-          console.error(
-            `Error fetching metadata for presale ${presale.id}:`,
-            error
-          );
-          return presale;
-        }
-      })
-    );
-
-    return NextResponse.json({ data: presalesWithImages });
+    console.log("All presales:", allPresales);
+    return NextResponse.json({ data: allPresales });
   } catch (error: any) {
     console.error("Error fetching presales:", error);
     return NextResponse.json(
@@ -69,7 +49,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const dummyWallet = new Keypair();
-    const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "");
+    
+    // Use the proper RPC endpoint from config
+    const endpoint = getRpcEndpoint(true); // Use custom RPC
+    console.log("Using RPC endpoint:", endpoint);
+    
+    const connection = new Connection(endpoint, "confirmed");
     const provider = new AnchorProvider(
       connection,
       { publicKey: dummyWallet.publicKey } as Wallet,
@@ -94,7 +79,8 @@ export async function POST(req: Request) {
       !body.presaleAmount ||
       !body.presalePercentage ||
       !body.endTime ||
-      !body.userAddress
+      !body.userAddress ||
+      !body.imageURI
     ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
@@ -131,7 +117,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const id = Math.floor(10 + Math.random() * 90);
+    // Generate a proper UUID instead of a random number
+    const id = Math.floor(10 + Math.random() * 90); // Keep this for contract compatibility
+    const dbId = randomUUID(); // Use this UUID for database operations
 
     const values = {
       name: body.name,
@@ -162,14 +150,33 @@ export async function POST(req: Request) {
     );
 
     console.log("Reaching here at 99");
+    
+    // Create token in tb_tokens first
+    const newToken = await tokens.create({
+      mint_address: mintPDA.toBase58(),
+      symbol: body.symbol,
+      name: body.name,
+      decimals: 9, // Assuming 9 decimals as standard for Solana SPL tokens
+      logo_uri: body?.imageURI
+    });
+    
+    if (!newToken || newToken.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Error creating token data" },
+        { status: 500 }
+      );
+    }
+    
     // Create the presale record using Drizzle
     const newPresale = await presales.create({
-      id: id,
+      id: dbId, // Use the UUID string for database - id is now expecting a string
+      token_id: newToken[0].id, // Link to the token we just created
       name: body.name,
       symbol: body.symbol,
       uri: body.uri,
       description: body.description,
       total_supply: body.totalSupply,
+      imageURI: body?.imageURI as string,
       // ticker as u64 / (total_supply * presale_percentage as u64 / 100);
       token_price: body.tokenPrice,
       min_purchase: body.minPurchase,
@@ -234,20 +241,28 @@ export async function POST(req: Request) {
       .transaction();
 
     const finalTx = new Transaction().add(tx, tx2);
+    
+    // Make sure to set the latest blockhash and fee payer BEFORE simulation
     finalTx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
     finalTx.feePayer = new PublicKey(body.userAddress);
 
     console.log("Simulating transaction...");
     const simulation = await connection.simulateTransaction(finalTx);
     console.log("Simulation result:", simulation.value.logs);
-
+    
     const serializedTx = Buffer.from(
       finalTx.serialize({
         requireAllSignatures: false,
+        verifySignatures: false,
       })
-    ).toString("base64");
+    ).toString('base64');
 
-    return NextResponse.json({ success: true, tx: serializedTx });
+    return NextResponse.json({ 
+      success: true, 
+      tx: serializedTx,
+      tokenId: dbId, // Return the UUID for database operations
+      presaleAddress: presalePDA.toBase58()
+    });
   } catch (error: any) {
     console.error("Error creating presale token:", error);
     return NextResponse.json(

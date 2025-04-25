@@ -2,5 +2,11 @@
 	"devDependencies": {
 		"drizzle-kit": "0.30.5",
 		"pg-connection-string": "^2.7.0"
+	},
+	"scripts": {
+		"migrate:frontend": "cd frontend && pnpm exec ts-node src/db/migrations/run-field-migration.ts",
+		"migrate:backend": "cd backend && pnpm exec ts-node src/db/migrations/run-field-migration.ts",
+		"migrate:all": "pnpm migrate:frontend && pnpm migrate:backend",
+		"update:image-uris": "cd frontend && pnpm exec ts-node src/db/migrations/update-presale-image-uris.ts"
 	}
 }
