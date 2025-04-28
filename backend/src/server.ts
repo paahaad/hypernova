@@ -224,6 +224,7 @@ app.post('/pool', async (req, res) => {
             new PublicKey(userAddress)
         );
 
+        console.log('control reached here');
         // Ensure tokens exist in the database
         let tokenA, tokenB;
         
@@ -694,6 +695,116 @@ app.post('/quote', async (req, res) => {
         });
     } catch (error) {
         console.error("Error getting quote:", error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+});
+
+/**
+ * @swagger
+ * /pool/details:
+ *   post:
+ *     summary: Get details of a specific Whirlpool
+ *     tags: [Pool]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - poolAddress
+ *             properties:
+ *               poolAddress:
+ *                 type: string
+ *                 description: The address of the Whirlpool
+ *     responses:
+ *       200:
+ *         description: Pool details retrieved successfully
+ *       404:
+ *         description: Pool not found
+ *       500:
+ *         description: Error occurred while fetching pool details
+ */
+// @ts-ignore
+app.post('/pool/details', async (req, res) => {
+    try {
+        const { poolAddress } = req.body;
+
+        if (!poolAddress) {
+            return res.status(400).json({ error: "Pool address is required" });
+        }
+
+        // Validate pool address
+        try {
+            new PublicKey(poolAddress);
+        } catch (error) {
+            return res.status(400).json({ error: "Invalid pool address format" });
+        }
+
+        // // Get pool data from the database
+        // const poolData = await poolRepository.findByAddress(poolAddress);
+        // if (!poolData) {
+        //     return res.status(404).json({ error: "Pool not found in database" });
+        // }
+
+        // // Get token information from the database
+        // const tokenA = await tokenRepository.findByMintAddress(poolData.tokenA_mint_address);
+        // const tokenB = await tokenRepository.findByMintAddress(poolData.tokenB_mint_address);
+
+        // Fetch on-chain pool data
+        console.log("Fetching on-chain pool data", poolAddress);
+        const whirlpool = await whirlpoolClient.getPool(new PublicKey(poolAddress));
+        
+        if (!whirlpool) {
+            return res.status(404).json({ error: "Pool not found on-chain" });
+        }
+
+        // Get pool stats
+        const poolStats = await whirlpool.getData();
+        
+        // Calculate price based on sqrt price
+        const sqrtPrice = new Decimal(poolStats.sqrtPrice.toString());
+        const price = sqrtPrice.mul(sqrtPrice).div(new Decimal(2).pow(64));
+
+        // Format response
+        // const response = {
+        //     address: poolAddress,
+        //     tokens: {
+        //         tokenA: {
+        //             mint: tokenA?.mint_address || poolData.tokenA_mint_address,
+        //             symbol: tokenA?.symbol || "Unknown",
+        //             name: tokenA?.name || "Unknown",
+        //             decimals: tokenA?.decimals || 0,
+        //             logo: tokenA?.logo_uri || null
+        //         },
+        //         tokenB: {
+        //             mint: tokenB?.mint_address || poolData.tokenB_mint_address,
+        //             symbol: tokenB?.symbol || "Unknown",
+        //             name: tokenB?.name || "Unknown",
+        //             decimals: tokenB?.decimals || 0,
+        //             logo: tokenB?.logo_uri || null
+        //         }
+        //     },
+        //     liquidity: poolStats.liquidity.toString(),
+        //     sqrtPrice: poolStats.sqrtPrice.toString(),
+        //     price: price.toString(),
+        //     tickSpacing: poolStats.tickSpacing,
+        //     feeRate: poolStats.feeRate,
+        //     protocolFeeRate: poolStats.protocolFeeRate,
+        //     tokenVaultA: poolStats.tokenVaultA.toString(),
+        //     tokenVaultB: poolStats.tokenVaultB.toString(),
+        //     feeGrowthGlobalA: poolStats.feeGrowthGlobalA.toString(),
+        //     feeGrowthGlobalB: poolStats.feeGrowthGlobalB.toString(),
+        //     tickCurrentIndex: poolStats.tickCurrentIndex,
+        //     lpMint: poolData.lp_mint
+        // };
+
+        // res.json(response);
+        console.log("Pool details fetched successfully");
+        console.log(poolStats);
+        res.json({"status": "success"});
+    } catch (error) {
+        console.error("Error fetching pool details:", error);
         res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
 });

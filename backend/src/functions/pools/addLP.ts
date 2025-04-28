@@ -14,7 +14,6 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { PublicKey, Transaction, Keypair, SystemProgram, SYSVAR_RENT_PUBKEY, VersionedTransaction } from "@solana/web3.js";
 import { config, connection, keyPair, wallet, ctx, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolClient } from "../../client";
-import { BN } from "@coral-xyz/anchor";
 import { Decimal } from "decimal.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Percentage } from "@orca-so/common-sdk";
@@ -69,36 +68,38 @@ async function addLiquidity(
         console.table({ "whirlpool": whirlpoolAddress.toString(), "user": userAddress.toString(), "tokenAmountA": tokenAmountA, "tokenAmountB": tokenAmountB, "priceLower": priceLower, "priceUpper": priceUpper })
         // Get the whirlpool data
         const whirlpool = await whirlpoolClient.getPool(whirlpoolAddress);
-        const whirlpoolData = await whirlpool.getData()
+        const whirlpoolData = await whirlpool.getData();
         if (!whirlpool) {
             throw new Error("Whirlpool not found");
         }
 
-        // Convert prices to tick indices
-        const tickLowerIndex = PriceMath.priceToTickIndex(
-            new Decimal(priceLower),
-            6, // Using default decimals, adjust based on your tokens
-            6
-        );
-        const tickUpperIndex = PriceMath.priceToTickIndex(
-            new Decimal(priceUpper),
-            6,
-            6
-        );
+        // Get token mint info
+        const tokenAInfo = await whirlpool.getTokenAInfo();
+        const tokenBInfo = await whirlpool.getTokenBInfo();
 
-        const tickLower = TickUtil.getInitializableTickIndex(
-            PriceMath.priceToTickIndex(new Decimal(98), 6, 9),
+        // Convert prices to tick indices
+        const tickLowerIndex = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+                new Decimal(priceLower),
+                tokenAInfo.decimals,
+                tokenBInfo.decimals
+            ),
             whirlpoolData.tickSpacing
         );
-        const tickUpper = TickUtil.getInitializableTickIndex(
-            PriceMath.priceToTickIndex(new Decimal(150), 6, 9),
+        
+        const tickUpperIndex = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+                new Decimal(priceUpper),
+                tokenAInfo.decimals,
+                tokenBInfo.decimals
+            ),
             whirlpoolData.tickSpacing
         );
 
         const tickArrayPda = PDAUtil.getTickArray(
             ctx.program.programId,
             whirlpoolAddress,
-            tickLower
+            tickLowerIndex
         );
         const tickArray = await ctx.fetcher.getTickArray(tickArrayPda.publicKey);
         console.log(tickArray)
@@ -106,7 +107,7 @@ async function addLiquidity(
         let tick_tx = null;
         if (!tickArray) {
             tick_tx = toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, {
-                startTick: tickLower,
+                startTick: tickLowerIndex,
                 tickArrayPda,
                 whirlpool: whirlpoolAddress,
                 funder: wallet.publicKey,

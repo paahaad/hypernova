@@ -4,8 +4,8 @@ import { envRPC_URL } from './env';
 import { getHypernovaProgramId, Hypernova, HypernovaIDL } from '../../anchor/src/hypernova-exports';
 
 // Initialize connection
-export const connection = new Connection(envRPC_URL, "confirmed");
-
+export const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL as string, "confirmed");
+console.log('connection', connection);
 // Get the appropriate program ID based on environment
 export const programId = getHypernovaProgramId();
 

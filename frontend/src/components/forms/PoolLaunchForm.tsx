@@ -67,9 +67,9 @@ export default function PoolLaunchForm() {
         toast.message(response.data.message);
         return;
       }
-      
       setStatus('signing');
       const txData = Transaction.from(Buffer.from(tx, 'base64'));
+      console.log('txData', txData);
       const signature = await sendTransaction(txData, connection);
       console.log('signature', signature);
       // TODO: Store the pool data in the database
