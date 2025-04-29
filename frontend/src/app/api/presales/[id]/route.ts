@@ -28,7 +28,7 @@ export async function GET(_: NextRequest, { params }: RouteParams) {
     }
     
     // Get token details
-    const token = await tokens.findById(presale[0].token_id);
+    const token = await tokens.findById(presale[0].token_id || '');
     
     // Include token details in the response
     const presaleWithToken = {

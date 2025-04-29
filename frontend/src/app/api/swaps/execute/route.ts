@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     const swapResult = await swaps.create({
       pool_id: removeHypPrefix(body.pool_id),
       user_wallet: body.user_wallet,
-      amount_in: Number(body.amount_in),
-      amount_out: Number(body.amount_out),
+      amount_in: body.amount_in,
+      amount_out: body.amount_out,
       token_in_id: removeHypPrefix(body.token_in_id),
       token_out_id: removeHypPrefix(body.token_out_id),
       tx_hash: body.tx_hash

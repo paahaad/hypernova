@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
       result = await liquidityPositions.create({
         user_wallet: body.user_wallet,
         pool_id: removeHypPrefix(body.pool_id),
-        amount_token_a: Number(body.amount_token_a),
-        amount_token_b: Number(body.amount_token_b),
-        lp_tokens: Number(body.lp_tokens)
+        amount_token_a: String(body.amount_token_a),
+        amount_token_b: String(body.amount_token_b),
+        lp_tokens: String(body.lp_tokens)
       });
     }
     

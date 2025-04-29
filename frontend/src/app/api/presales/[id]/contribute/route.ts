@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const contribution = await presaleContributions.create({
       presale_id: removeHypPrefix(presale[0].id),
       user_wallet: body.user_wallet,
-      amount: Number(body.amount)
+      amount: body.amount
     });
     
     // Update total_raised in presale

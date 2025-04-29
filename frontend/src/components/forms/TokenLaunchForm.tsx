@@ -13,6 +13,7 @@ import { HypernovaApi } from '@/lib/api-client';
 import { Upload, ImageIcon, Loader2 } from 'lucide-react';
 import { themedToast } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 // CylinderSlider component for 3D slider controls
 interface CylinderSliderProps {
@@ -539,7 +540,9 @@ function ThemeCalendar({ selectedDate, onChange, minDate }: DateVialSelectorProp
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        !isDisabled && handleDateClick(date);
+                        if (!isDisabled) {
+                          handleDateClick(date);
+                        }
                       }}
                       disabled={isDisabled}
                       className={`
@@ -1051,11 +1054,14 @@ export default function TokenLaunchForm() {
           >
             {imagePreview ? (
               <div className="w-full flex flex-col items-center">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="max-h-48 max-w-full object-contain rounded-lg mb-4" 
-                />
+                <div className="relative w-full h-48 mb-4">
+                  <Image 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    fill
+                    className="object-contain rounded-lg" 
+                  />
+                </div>
                 <p className="text-sm text-gray-400">Click or drag to change image</p>
               </div>
             ) : (
